@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地理信息技术 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .satellite-demo {
+      width: 100%;
+      height: 300px;
+      background: radial-gradient(ellipse at top, #0a0a2a 0%, #1a3a5c 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .satellite {
+      position: absolute;
+      font-size: 2rem;
+      animation: satelliteOrbit 10s linear infinite;
+    }
+
+    @keyframes satelliteOrbit {
+      from { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+      to { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+    }
+
+    .earth-from-space {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle at 30% 30%, #4a90e2, #1a5f9e 50%, #0d3b66 100%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 30px rgba(74, 144, 226, 0.5);
+    }
+
+    .scan-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+      animation: scanMove 3s linear infinite;
+    }
+
+    @keyframes scanMove {
+      from { top: 0; }
+      to { top: 100%; }
+    }
+
+    .gps-demo {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #1a3a2a, #0d1f15);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .gps-satellite {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: gpsBlink 1s ease-in-out infinite;
+    }
+
+    @keyframes gpsBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .gps-signal {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--accent-cyan);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: signalExpand 2s ease-out infinite;
+    }
+
+    @keyframes signalExpand {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+    }
+
+    .gps-receiver {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #4a90e2, #2c5282);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .gis-layer {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .layer-toggle {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85rem;
+    }
+
+    .layer-toggle:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .layer-toggle.active {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    .gis-preview {
+      width: 100%;
+      height: 250px;
+      background: #1a3a5c;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .layer-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .layer-overlay.visible {
+      opacity: 1;
+    }
+
+    .terrain-layer { background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="20,80 50,20 80,80" fill="%232ecc71" opacity="0.5"/></svg>') center/cover; }
+    .water-layer { background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="50" width="80" height="30" fill="%233498db" opacity="0.5"/></svg>') center/cover; }
+    .road-layer { background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><line x1="0" y1="50" x2="100" y2="50" stroke="%23f39c12" stroke-width="3"/></svg>') center/cover; }
+    .building-layer { background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="30" y="30" width="20" height="30" fill="%239b59b6" opacity="0.5"/><rect x="60" y="40" width="15" height="20" fill="%239b59b6" opacity="0.5"/></svg>') center/cover; }
+
+    .location-marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+    }
+
+    .timelapse-slider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .year-btn {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .year-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .year-btn.active {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    .identify-game {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .identify-card {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .identify-card:hover {
+      background: rgba(255,255,255,0.1);
+      transform: scale(1.05);
+    }
+
+    .identify-card.correct {
+      border-color: var(--accent-green);
+      background: rgba(39, 174, 96, 0.2);
+    }
+
+    .identify-card.wrong {
+      border-color: var(--accent-red);
+      background: rgba(231, 76, 60, 0.2);
+    }
+
+    .route-map {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #2c3e50, #1a252f);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .route-point {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .route-line {
+      position: absolute;
+      background: var(--accent-cyan);
+      height: 3px;
+      transform-origin: left center;
+    }
+
+    .disease-spread {
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(135deg, #1a3a2a, #0d1f15);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .infection-dot {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      animation: infectPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes infectPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+
+    .case-counter {
+      display: flex;
+      gap: 20px;
+      margin-top: 16px;
+    }
+
+    .counter-item {
+      flex: 1;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .counter-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body data-theme="gis">
+  <nav class="nav-bar" style="background:rgba(30,50,70,0.95)">
+    <div class="nav-brand">🛰️ 地理信息技术</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link active">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('rs')">遥感技术 RS</button>
+        <button class="tab" onclick="switchTab('gps')">定位系统 GPS</button>
+        <button class="tab" onclick="switchTab('gis')">地理信息系统</button>
+      </div>
+
+      <div id="rs" class="tab-content active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🛰️ 卫星影像时间机器</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">选择年份，查看上海浦东新区的城市变迁</p>
+            <div class="satellite-demo">
+              <div class="earth-from-space"></div>
+              <div class="satellite" style="top:50%;left:50%">🛰️</div>
+              <div class="scan-line"></div>
+              <div id="yearIndicator" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:2rem;font-weight:bold;color:rgba(255,255,255,0.8)">2010</div>
+            </div>
+            <div class="timelapse-slider">
+              <button class="year-btn" onclick="selectYear(this, 1990)">1990</button>
+              <button class="year-btn" onclick="selectYear(this, 2000)">2000</button>
+              <button class="year-btn active" onclick="selectYear(this, 2010)">2010</button>
+              <button class="year-btn" onclick="selectYear(this, 2020)">2020</button>
+            </div>
+            <div id="timelapseInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <p><strong>📍 上海浦东新区</strong></p>
+              <p style="font-size:0.9rem;margin-top:8px" id="yearDescription">2010年：世博会举办，城市建设进入新阶段</p>
+              <p class="data-source" style="margin-top:4px">数据来源：Landsat、Sentinel-2</p>
+            </div>
+          </div>
+
+          </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌡️ 火灾/洪水实时监测</h3>
+          <p class="data-source">数据来源：NASA FIRMS、欧洲哥白尼应急管理系统</p>
+          <div class="chart-container large" id="disasterMonitorChart"></div>
+          <div class="grid-4" style="margin-top:20px">
+            <div style="background:rgba(231,76,60,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🔥</div>
+              <div style="font-weight:600">全球活跃火灾</div>
+              <div style="color:var(--accent-red);font-size:1.5rem;margin-top:8px">1,247</div>
+            </div>
+            <div style="background:rgba(52,152,219,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🌊</div>
+              <div style="font-weight:600">当前洪涝区域</div>
+              <div style="color:var(--accent-blue);font-size:1.5rem;margin-top:8px">23</div>
+            </div>
+            <div style="background:rgba(39,174,96,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🛰️</div>
+              <div style="font-weight:600">监测卫星数量</div>
+              <div style="color:var(--accent-green);font-size:1.5rem;margin-top:8px">15</div>
+            </div>
+            <div style="background:rgba(155,89,182,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">⏱️</div>
+              <div style="font-weight:600">数据更新频率</div>
+              <div style="color:var(--accent-purple);font-size:1.5rem;margin-top:8px">6h</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌃 夜间灯光与经济发展</h3>
+          <p class="data-source">数据来源：NOAA DMSP、VIIRS夜间灯光数据</p>
+          <div class="chart-container large" id="nightLightChart"></div>
+          <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <p><strong>研究发现：</strong>夜间灯光强度与GDP高度相关（r=0.89），可以有效反映区域经济发展水平和城市化进程。</p>
+            <p style="font-size:0.9rem;margin-top:8px">灯光最亮的地区：北美、东亚、欧洲主要城市群</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="gps" class="tab-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3>📡 GPS定位原理</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">至少4颗卫星如何确定你的位置</p>
+            <div class="gps-demo">
+              <div style="position:absolute;top:5px;left:5px;font-size:0.75rem;color:rgba(255,255,255,0.6)">📡 GPS定位示意图</div>
+              <div class="gps-satellite" style="top:10%;left:20%">🛰️</div>
+              <div class="gps-satellite" style="top:10%;right:20%">🛰️</div>
+              <div class="gps-satellite" style="top:30%;left:10%">🛰️</div>
+              <div class="gps-satellite" style="top:30%;right:10%">🛰️</div>
+              <svg class="gps-lines" width="100%" height="100%">
+                <line x1="20%" y1="10%" x2="50%" y2="75%" stroke="rgba(39, 174, 96, 0.6)" stroke-width="2" stroke-dasharray="5,5">
+                  <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+                </line>
+                <line x1="80%" y1="10%" x2="50%" y2="75%" stroke="rgba(39, 174, 96, 0.6)" stroke-width="2" stroke-dasharray="5,5">
+                  <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+                </line>
+                <line x1="10%" y1="30%" x2="50%" y2="75%" stroke="rgba(39, 174, 96, 0.6)" stroke-width="2" stroke-dasharray="5,5">
+                  <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" begin="1s"/>
+                </line>
+                <line x1="90%" y1="30%" x2="50%" y2="75%" stroke="rgba(39, 174, 96, 0.6)" stroke-width="2" stroke-dasharray="5,5">
+                  <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" begin="1.5s"/>
+                </line>
+              </svg>
+              <div class="gps-signal"></div>
+              <div class="gps-signal" style="animation-delay:0.5s"></div>
+              <div class="gps-signal" style="animation-delay:1s"></div>
+              <div class="gps-signal" style="animation-delay:1.5s"></div>
+              <div class="gps-receiver">📱</div>
+              <div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:0.75rem;color:rgba(255,255,255,0.6)">📍 4颗卫星定位</div>
+            </div>
+            <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <p><strong>定位原理：</strong></p>
+              <ol style="margin-left:20px;margin-top:8px;font-size:0.9rem">
+                <li>卫星发射精确的时间信号</li>
+                <li>接收器计算信号传播时间</li>
+                <li>根据时间计算与各卫星的距离</li>
+                <li>3颗卫星确定平面位置</li>
+                <li>第4颗卫星校准时间误差</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📶 GPS信号穿透实验</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击不同遮挡物，观察对GPS信号的影响</p>
+            <div class="grid-2" style="gap:12px">
+              <div class="identify-card" onclick="testSignal('clear', this)" style="padding:20px">
+                <div style="font-size:2rem">☀️</div>
+                <div style="font-weight:600;margin-top:8px">晴空</div>
+                <div style="font-size:0.8rem;color:var(--accent-green);margin-top:4px">信号: 强</div>
+              </div>
+              <div class="identify-card" onclick="testSignal('tree', this)" style="padding:20px">
+                <div style="font-size:2rem">🌲</div>
+                <div style="font-weight:600;margin-top:8px">茂密树林</div>
+                <div style="font-size:0.8rem;color:var(--accent-yellow);margin-top:4px">信号: 中</div>
+              </div>
+              <div class="identify-card" onclick="testSignal('building', this)" style="padding:20px">
+                <div style="font-size:2rem">🏢</div>
+                <div style="font-weight:600;margin-top:8px">高楼峡谷</div>
+                <div style="font-size:0.8rem;color:var(--accent-orange);margin-top:4px">信号: 弱</div>
+              </div>
+              <div class="identify-card" onclick="testSignal('mountain', this)" style="padding:20px">
+                <div style="font-size:2rem">⛰️</div>
+                <div style="font-weight:600;margin-top:8px">山区</div>
+                <div style="font-size:0.8rem;color:var(--accent-red);margin-top:4px">信号: 不稳定</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🎯 寻宝游戏</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">根据坐标线索寻找隐藏的宝藏</p>
+          <div style="display:flex;gap:16px;margin-bottom:16px">
+            <div class="input-group" style="flex:1">
+              <label>输入纬度</label>
+              <input type="number" step="0.0001" id="treasureLat" placeholder="例如：31.2304">
+            </div>
+            <div class="input-group" style="flex:1">
+              <label>输入经度</label>
+              <input type="number" step="0.0001" id="treasureLng" placeholder="例如：121.4737">
+            </div>
+          </div>
+          <div style="padding:12px;background:rgba(241,196,15,0.1);border-radius:8px;margin-bottom:16px">
+            <p style="font-size:0.9rem">💡 提示：这个城市有东方明珠塔，是中国最大的经济中心</p>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <button class="btn" onclick="searchTreasure()">🔍 搜索宝藏</button>
+            <button class="btn btn-secondary" onclick="showHint()">💡 获取提示</button>
+          </div>
+          <div id="treasureResult" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <p>输入坐标开始寻宝之旅！</p>
+          </div>
+        </div>
+
+        </div>
+      </div>
+
+      <div id="gis" class="tab-content">
+        <div class="card">
+          <h3>📊 GIS图层叠加演示</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">依次叠加不同类型的图层，了解GIS工作原理</p>
+          <div class="gis-layer">
+            <button class="layer-toggle active" onclick="toggleLayer('terrain', this)">🏔️ 地形</button>
+            <button class="layer-toggle active" onclick="toggleLayer('water', this)">💧 水系</button>
+            <button class="layer-toggle" onclick="toggleLayer('road', this)">🛤️ 道路</button>
+            <button class="layer-toggle" onclick="toggleLayer('building', this)">🏠 建筑</button>
+          </div>
+          <div class="gis-preview">
+            <div class="layer-overlay terrain-layer visible" id="terrainOverlay"></div>
+            <div class="layer-overlay water-layer visible" id="waterOverlay"></div>
+            <div class="layer-overlay road-layer" id="roadOverlay"></div>
+            <div class="layer-overlay building-layer" id="buildingOverlay"></div>
+            <div class="location-marker" id="gisMarker"></div>
+          </div>
+          <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <p><strong>GIS分析过程：</strong></p>
+            <ol style="margin-left:20px;margin-top:8px;font-size:0.9rem">
+              <li>叠加地形和水系数据 → 识别水源分布</li>
+              <li>叠加道路网络 → 分析交通可达性</li>
+              <li>叠加人口密度 → 评估服务覆盖范围</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📈 GIS应用案例统计</h3>
+          <p class="data-source">数据来源：中国GIS协会年度报告 2023</p>
+          <div class="chart-container large" id="gisAppChart"></div>
+          <div class="grid-3" style="margin-top:20px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-cyan)">城市规划</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">土地利用规划<br>交通网络设计<br>公共设施选址</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-green)">环境监测</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">空气质量监测<br>水质分析<br>生态评价</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-orange)">灾害管理</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">风险评估<br>应急响应<br>灾后重建</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>地理信息技术 | 数据来源：NASA、ESA、中国资源卫星应用中心</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'rs') initRSCharts();
+      if (tabId === 'gis') initSchoolSiteChart();
+    }
+
+    function selectYear(btn, year) {
+      document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      document.getElementById('yearIndicator').textContent = year;
+      
+      const descriptions = {
+        1990: '1990年：浦东新区刚成立，大部分区域还是农田和村庄',
+        2000: '2000年：陆家嘴金融中心初步形成，浦东机场建成',
+        2010: '2010年：世博会举办，城市建设进入新阶段',
+        2020: '2020年：现代化大都市格局形成，人口超过500万'
+      };
+      
+      document.getElementById('yearDescription').textContent = descriptions[year];
+      GeoApp.saveProgress('sheet8', { timelapseViewed: year });
+    }
+
+    function identifyFeature(card, type) {
+      const correctTypes = { forest: '🌲', water: '🌊', urban: '🏙️', farmland: '🌾' };
+      const correct = card.querySelector('div:nth-child(1)').textContent === correctTypes[type];
+
+      if (correct) {
+        card.classList.add('correct');
+        document.getElementById('identifyResult').innerHTML = '<strong style="color:var(--accent-green)">正确！</strong> 你成功识别了地物类型';
+      } else {
+        card.classList.add('wrong');
+        document.getElementById('identifyResult').innerHTML = '<strong style="color:var(--accent-red)">错误</strong> 再试试其他选项';
+      }
+
+      setTimeout(() => {
+        card.classList.remove('correct', 'wrong');
+      }, 1500);
+
+      GeoApp.saveProgress('sheet8', { featureIdentified: type });
+    }
+
+    function testSignal(type, el) {
+      const signals = {
+        clear: { signal: '强', color: 'var(--accent-green)' },
+        tree: { signal: '中', color: 'var(--accent-yellow)' },
+        building: { signal: '弱', color: 'var(--accent-orange)' },
+        mountain: { signal: '不稳定', color: 'var(--accent-red)' }
+      };
+
+      document.querySelectorAll('.identify-card').forEach(c => c.classList.remove('correct'));
+      el.classList.add('correct');
+
+      const data = signals[type];
+      alert(`${type === 'clear' ? '晴空' : type === 'tree' ? '茂密树林' : type === 'building' ? '高楼峡谷' : '山区'}：GPS信号${data.signal}`);
+    }
+
+    function searchTreasure() {
+      const lat = parseFloat(document.getElementById('treasureLat').value);
+      const lng = parseFloat(document.getElementById('treasureLng').value);
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        document.getElementById('treasureResult').innerHTML = '<p style="color:var(--accent-red)">请输入有效的坐标！</p>';
+        return;
+      }
+      
+      const targetLat = 31.2304;
+      const targetLng = 121.4737;
+      const distance = Math.sqrt(Math.pow(lat - targetLat, 2) + Math.pow(lng - targetLng, 2));
+      
+      if (distance < 0.1) {
+        document.getElementById('treasureResult').innerHTML = `
+          <p style="color:var(--accent-yellow);font-size:1.2rem">🎉 恭喜找到宝藏！</p>
+          <p>坐标位置：(${lat.toFixed(4)}, ${lng.toFixed(4)})</p>
+          <p>📍 这是上海外滩！东方明珠塔所在地！</p>
+          <div style="margin-top:12px;font-size:2rem">🏆</div>
+        `;
+        GeoApp.saveProgress('sheet8', { treasureFound: true });
+      } else if (distance < 0.5) {
+        document.getElementById('treasureResult').innerHTML = `
+          <p style="color:var(--accent-orange)">🔥 靠近目标了！距离宝藏约 ${(distance * 111).toFixed(0)} 公里</p>
+          <p>继续调整坐标！</p>
+        `;
+      } else if (distance < 2) {
+        document.getElementById('treasureResult').innerHTML = `
+          <p style="color:var(--accent-blue)">🌊 还在大海上！距离目标约 ${(distance * 111).toFixed(0)} 公里</p>
+          <p>提示：目标在中国东部沿海</p>
+        `;
+      } else {
+        document.getElementById('treasureResult').innerHTML = `
+          <p style="color:var(--accent-red)">❌ 太远了！距离目标超过 ${(distance * 111).toFixed(0)} 公里</p>
+          <p>再看看提示吧！</p>
+        `;
+      }
+    }
+
+    function showHint() {
+      const hints = [
+        '纬度大约在31度左右',
+        '经度大约在121度左右',
+        '这个城市有外滩和陆家嘴',
+        '黄浦江穿过这座城市',
+        '2010年世博会在这里举办'
+      ];
+      const randomHint = hints[Math.floor(Math.random() * hints.length)];
+      alert(`💡 提示：${randomHint}`);
+    }
+
+    let waypoints = [];
+    function setWaypoint(num) {
+      const el = event.target;
+      if (!waypoints.includes(num)) {
+        waypoints.push(num);
+        el.style.background = 'var(--accent-green)';
+        el.style.transform = 'scale(1.1)';
+      } else {
+        waypoints = waypoints.filter(w => w !== num);
+        el.style.background = '';
+        el.style.transform = '';
+      }
+      document.getElementById('routeResult').innerHTML = `
+        <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:8px">📍 地图说明</div>
+        <div style="font-size:0.85rem">🏠 A点：住宅区（起点） | 📍 B点：途经点 | 🏢 C点：商业区（终点）</div>
+        <div style="margin-top:12px"><strong>已选择 ${waypoints.length}/3 个途经点</strong></div>
+      `;
+    }
+
+    function planRoute() {
+      if (waypoints.length < 2) {
+        alert('请至少选择2个点（起点和终点）');
+        return;
+      }
+      document.getElementById('routeLine').style.display = 'block';
+      const distance = waypoints.length === 2 ? 12.5 : 15.8;
+      const time = waypoints.length === 2 ? 25 : 32;
+      document.getElementById('routeResult').innerHTML = `
+        <p style="color:var(--accent-cyan);font-size:1.1rem">🛤️ 最优路线已规划</p>
+        <div style="margin-top:12px;display:flex;gap:20px">
+          <div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-green)">${distance} km</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">总距离</div>
+          </div>
+          <div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-yellow)">${time} 分钟</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">预计时间</div>
+          </div>
+          <div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-blue)">🚗</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">自动驾驶模式</div>
+          </div>
+        </div>
+      `;
+      GeoApp.saveProgress('sheet8', { routePlanned: true });
+    }
+
+    function resetRoute() {
+      waypoints = [];
+      document.querySelectorAll('.route-point').forEach(el => {
+        el.style.background = '';
+        el.style.transform = '';
+      });
+      document.getElementById('routeLine').style.display = 'none';
+      document.getElementById('routeResult').innerHTML = `
+        <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:8px">📍 地图说明</div>
+        <div style="font-size:0.85rem">🏠 A点：住宅区（起点） | 📍 B点：途经点 | 🏢 C点：商业区（终点）</div>
+        <div style="margin-top:12px"><strong>点击地图上的点设置路线</strong></div>
+      `;
+    }
+
+    function toggleLayer(layer, btn) {
+      btn.classList.toggle('active');
+      const overlay = document.getElementById(layer + 'Overlay');
+      overlay.classList.toggle('visible');
+
+      const marker = document.getElementById('gisMarker');
+      if (layer === 'building') {
+        marker.style.top = '45%';
+        marker.style.left = '55%';
+      } else if (layer === 'road') {
+        marker.style.top = '50%';
+        marker.style.left = '48%';
+      }
+    }
+
+    function optimizeDelivery() {
+      const points = parseInt(document.getElementById('deliveryPoints').value) || 5;
+      const baseTime = 15;
+      const optimizedTime = baseTime + (points - 3) * 3;
+      document.querySelector('#deliveryResult div:last-child').textContent = optimizedTime + ' 分钟';
+    }
+
+    function simulateDisease() {
+      let infected = 1, recovered = 0, susceptible = 99;
+      const infectedEl = document.getElementById('infectedCount');
+      const recoveredEl = document.getElementById('recoveredCount');
+      const susceptibleEl = document.getElementById('susceptibleCount');
+
+      const interval = setInterval(() => {
+        if (infected > 0 && susceptible > 0) {
+          const newInfected = Math.min(susceptible, Math.floor(infected * 0.3));
+          infected += newInfected;
+          susceptible -= newInfected;
+          if (infected > 5) recovered += Math.floor(infected * 0.1);
+
+          infectedEl.textContent = infected;
+          recoveredEl.textContent = recovered;
+          susceptibleEl.textContent = susceptible;
+        } else {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+
+    function applyControl() {
+      GeoApp.saveProgress('sheet8', { diseaseControl: true });
+      alert('防控措施已实施：\n1. 减少人员流动\n2. 佩戴口罩\n3. 接种疫苗\n传播速度降低70%！');
+    }
+
+    function initRSCharts() {
+      const monitorChart = echarts.init(document.getElementById('disasterMonitorChart'));
+      const nightLightChart = echarts.init(document.getElementById('nightLightChart'));
+
+      monitorChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['火灾次数', '洪涝面积(万km²)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'], axisLabel: { color: '#b0b0d0', rotate: 45 } },
+        yAxis: [
+          { type: 'value', name: '火灾', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+          { type: 'value', name: '洪涝', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } }
+        ],
+        series: [
+          { name: '火灾次数', type: 'bar', data: [45, 38, 52, 78, 156, 203, 287, 312, 198, 134, 87, 56], itemStyle: { color: '#e74c3c' } },
+          { name: '洪涝面积(万km²)', type: 'line', yAxisIndex: 1, data: [12, 15, 23, 45, 67, 123, 189, 167, 98, 54, 32, 18], lineStyle: { color: '#3498db' }, itemStyle: { color: '#3498db' } }
+        ]
+      });
+
+      nightLightChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['北美', '东亚', '欧洲', '其他'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['1990', '2000', '2010', '2020'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '灯光强度指数', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [
+          { name: '北美', type: 'line', data: [100, 125, 145, 160], lineStyle: { color: '#e74c3c' }, itemStyle: { color: '#e74c3c' } },
+          { name: '东亚', type: 'line', data: [80, 150, 220, 280], lineStyle: { color: '#f1c40f' }, itemStyle: { color: '#f1c40f' } },
+          { name: '欧洲', type: 'line', data: [90, 110, 130, 145], lineStyle: { color: '#3498db' }, itemStyle: { color: '#3498db' } },
+          { name: '其他', type: 'line', data: [50, 75, 100, 130], lineStyle: { color: '#9b59b6' }, itemStyle: { color: '#9b59b6' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => { monitorChart.resize(); nightLightChart.resize(); });
+    }
+
+    function initSchoolSiteChart() {
+      const chartEl = document.getElementById('schoolSiteChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        radar: {
+          indicator: [
+            { name: '人口密度', max: 100 },
+            { name: '交通便利', max: 100 },
+            { name: '环境质量', max: 100 },
+            { name: '用地成本', max: 100 },
+            { name: '发展潜力', max: 100 }
+          ],
+          axisName: { color: '#b0b0d0' }
+        },
+        series: [{
+          type: 'radar',
+          data: [
+            { value: [85, 65, 95, 70, 80], name: '地址A', areaStyle: { color: 'rgba(52, 152, 219, 0.3)' }, lineStyle: { color: '#3498db' } },
+            { value: [60, 90, 55, 45, 70], name: '地址B', areaStyle: { color: 'rgba(46, 204, 113, 0.3)' }, lineStyle: { color: '#2ecc71' } },
+            { value: [95, 80, 75, 85, 90], name: '地址C', areaStyle: { color: 'rgba(231, 76, 60, 0.3)' }, lineStyle: { color: '#e74c3c' } }
+          ]
+        }]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initGISAppChart() {
+      const chartEl = document.getElementById('gisAppChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { 
+          trigger: 'axis',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: '#333',
+          textStyle: { color: '#fff' }
+        },
+        legend: { 
+          data: ['应用项目数'], 
+          textStyle: { color: '#b0b0d0' },
+          top: 10
+        },
+        grid: {
+          top: 60,
+          bottom: 80,
+          left: 80,
+          right: 40
+        },
+        xAxis: { 
+          type: 'category', 
+          data: ['城市规划', '环境监测', '灾害管理', '交通物流', '农业管理', '公共服务'], 
+          axisLabel: { 
+            color: '#b0b0d0', 
+            fontSize: 11 
+          },
+          axisLine: { lineStyle: { color: '#555' } },
+          name: '应用领域',
+          nameTextStyle: { color: '#b0b0d0' }
+        },
+        yAxis: { 
+          type: 'value', 
+          name: '项目数量（个）', 
+          axisLabel: { color: '#b0b0d0' }, 
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+          min: 0,
+          max: 1500
+        },
+        series: [{
+          name: '应用项目数', 
+          type: 'bar', 
+          data: [1250, 980, 756, 654, 543, 432], 
+          itemStyle: { 
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#00d4ff' }, 
+              { offset: 1, color: '#0066cc' }
+            ]),
+            borderRadius: [4, 4, 0, 0]
+          },
+          label: {
+            show: true,
+            position: 'top',
+            color: '#fff',
+            fontSize: 11
+          }
+        }]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initRSCharts();
+      initGISAppChart();
+    });
+  </script>
+</body>
+</html>

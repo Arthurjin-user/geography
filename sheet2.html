@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宇宙中的地球 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .solar-system-container {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      background: radial-gradient(ellipse at center, #1a1a3a 0%, #0a0a1a 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .sun {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, #fff700, #ff8c00);
+      border-radius: 50%;
+      box-shadow: 0 0 60px #ff8c00, 0 0 100px #ff4500;
+      cursor: pointer;
+      z-index: 10;
+      animation: sunPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes sunPulse {
+      0%, 100% { box-shadow: 0 0 60px #ff8c00, 0 0 100px #ff4500; }
+      50% { box-shadow: 0 0 80px #ff8c00, 0 0 120px #ff4500; }
+    }
+
+    .planet-orbit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .planet-orbit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: orbit linear infinite;
+    }
+
+    .planet {
+      position: absolute;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .planet:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 20px currentColor;
+    }
+
+    .planet-label {
+      position: absolute;
+      font-size: 0.7rem;
+      color: white;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .planet:hover .planet-label {
+      opacity: 1;
+    }
+
+    .orbit-mercury { width: 100px; height: 100px; margin-left: -50px; margin-top: -50px; }
+    .orbit-venus { width: 140px; height: 140px; margin-left: -70px; margin-top: -70px; }
+    .orbit-earth { width: 190px; height: 190px; margin-left: -95px; margin-top: -95px; }
+    .orbit-mars { width: 240px; height: 240px; margin-left: -120px; margin-top: -120px; }
+    .orbit-jupiter { width: 340px; height: 340px; margin-left: -170px; margin-top: -170px; }
+    .orbit-saturn { width: 440px; height: 440px; margin-left: -220px; margin-top: -220px; }
+    .orbit-uranus { width: 520px; height: 520px; margin-left: -260px; margin-top: -260px; }
+    .orbit-neptune { width: 600px; height: 600px; margin-left: -300px; margin-top: -300px; }
+
+    .orbit-mercury { width: 100px; height: 100px; animation-duration: 4s; }
+    .orbit-venus { width: 140px; height: 140px; animation-duration: 7s; }
+    .orbit-earth { width: 190px; height: 190; animation-duration: 10s; }
+    .orbit-mars { width: 240px; height: 240px; animation-duration: 15s; }
+    .orbit-jupiter { width: 340px; height: 340px; animation-duration: 25s; }
+    .orbit-saturn { width: 440px; height: 440px; animation-duration: 35s; }
+    .orbit-uranus { width: 520px; height: 520px; animation-duration: 50s; }
+    .orbit-neptune { width: 600px; height: 600px; animation-duration: 60s; }
+
+    .planet-mercury { width: 8px; height: 8px; background: #b5b5b5; color: #b5b5b5; }
+    .planet-venus { width: 12px; height: 12px; background: #e6c87a; color: #e6c87a; }
+    .planet-earth { width: 12px; height: 12px; background: #4a90e2; color: #4a90e2; }
+    .planet-mars { width: 10px; height: 10px; background: #c1440e; color: #c1440e; }
+    .planet-jupiter { width: 28px; height: 28px; background: linear-gradient(135deg, #d8ca9d, #a52a2a); color: #d8ca9d; }
+    .planet-saturn { width: 24px; height: 24px; background: linear-gradient(135deg, #f4d59e, #d4a76a); color: #f4d59e; }
+    .planet-uranus { width: 16px; height: 16px; background: #d1e7e7; color: #d1e7e7; }
+    .planet-neptune { width: 15px; height: 15px; background: #5b5ddf; color: #5b5ddf; }
+
+    .saturn-ring {
+      position: absolute;
+      width: 40px;
+      height: 10px;
+      border: 2px solid rgba(210, 180, 140, 0.6);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotateX(60deg);
+    }
+
+    .moon {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #ccc;
+      border-radius: 50%;
+    }
+
+    .eclipse-simulator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .eclipse-canvas {
+      width: 300px;
+      height: 300px;
+      position: relative;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .sun-eclipse {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, #fff700, #ff8c00);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 40px #ff8c00;
+      transition: all 0.5s ease;
+    }
+
+    .moon-eclipse {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: #333;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.5s ease;
+      z-index: 5;
+    }
+
+    .eclipse-type-display {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .constellation-map {
+      width: 100%;
+      height: 400px;
+      background: radial-gradient(ellipse at center, #0a0a2a 0%, #000 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .constellation-map:active {
+      cursor: grabbing;
+    }
+
+    .star-dot {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .star-dot:hover {
+      background: #00d4ff;
+      box-shadow: 0 0 10px #00d4ff;
+    }
+
+    .constellation-line {
+      position: absolute;
+      background: rgba(0, 212, 255, 0.3);
+      height: 1px;
+      transform-origin: left center;
+      pointer-events: none;
+    }
+
+    .weight-calculator {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .weight-result {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .aurora-canvas {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(to bottom, #0a0a2a, #1a1a4a);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .aurora-wave {
+      position: absolute;
+      width: 200%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(0, 255, 128, 0.3) 25%,
+        rgba(0, 212, 255, 0.3) 50%,
+        rgba(128, 0, 255, 0.3) 75%,
+        transparent 100%
+      );
+      animation: auroraMove 8s ease-in-out infinite;
+    }
+
+    @keyframes auroraMove {
+      0%, 100% { transform: translateX(-25%); }
+      50% { transform: translateX(0%); }
+    }
+
+    .solar-activity {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .sun-spot {
+      width: 30px;
+      height: 30px;
+      background: #333;
+      border-radius: 50%;
+      position: relative;
+      animation: sunSpotPulse 2s ease-in-out infinite;
+    }
+
+    .sun-spot::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      background: rgba(255, 200, 0, 0.5);
+      border-radius: 50%;
+    }
+
+    @keyframes sunSpotPulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+
+    .flare {
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #fff, #ff4500);
+      border-radius: 50%;
+      animation: flareFlash 1s ease-in-out infinite;
+    }
+
+    @keyframes flareFlash {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    .prominence {
+      width: 4px;
+      height: 30px;
+      background: linear-gradient(to top, #ff4500, #fff);
+      margin: 0 auto;
+      border-radius: 2px;
+      animation: prominenceLoop 3s ease-in-out infinite;
+    }
+
+    @keyframes prominenceLoop {
+      0%, 100% { height: 30px; }
+      50% { height: 50px; }
+    }
+
+    @keyframes orbit {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes planetOrbit {
+      0% { transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg); }
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .speed-value {
+      min-width: 60px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body data-theme="universe">
+  <nav class="nav-bar">
+    <div class="nav-brand">🌌 宇宙中的地球</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link active">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('solar-system')">太阳系模拟器</button>
+        <button class="tab" onclick="switchTab('eclipse')">日食月食模拟</button>
+        <button class="tab" onclick="switchTab('sun-effect')">太阳对地球影响</button>
+        <button class="tab" onclick="switchTab('earth-compare')">地球卫星图</button>
+        <button class="tab" onclick="switchTab('weight-calc')">行星重力体验</button>
+      </div>
+
+      <div id="solar-system" class="tab-content active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🌌 太阳系漫游模拟器</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击任意行星查看详细信息。拖动速度滑块控制行星运动。</p>
+            <div class="solar-system-container" id="solarSystem">
+              <div class="sun" onclick="showPlanetInfo('sun')"></div>
+              <div class="planet-orbit orbit-mercury">
+                <div class="planet planet-mercury" onclick="showPlanetInfo('mercury')" style="top:-4px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">水星</span>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-venus">
+                <div class="planet planet-venus" onclick="showPlanetInfo('venus')" style="top:-6px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">金星</span>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-earth">
+                <div class="planet planet-earth" onclick="showPlanetInfo('earth')" style="top:-6px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">地球</span>
+                  <div class="moon" style="top:-8px;left:12px;position:absolute"></div>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-mars">
+                <div class="planet planet-mars" onclick="showPlanetInfo('mars')" style="top:-5px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">火星</span>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-jupiter">
+                <div class="planet planet-jupiter" onclick="showPlanetInfo('jupiter')" style="top:-14px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">木星</span>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-saturn">
+                <div class="planet planet-saturn" onclick="showPlanetInfo('saturn')" style="top:-12px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">土星</span>
+                  <div class="saturn-ring"></div>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-uranus">
+                <div class="planet planet-uranus" onclick="showPlanetInfo('uranus')" style="top:-8px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">天王星</span>
+                </div>
+              </div>
+              <div class="planet-orbit orbit-neptune">
+                <div class="planet planet-neptune" onclick="showPlanetInfo('neptune')" style="top:-7px;left:50%;transform:translateX(-50%)">
+                  <span class="planet-label">海王星</span>
+                </div>
+              </div>
+            </div>
+            <div class="speed-control">
+              <span>播放速度:</span>
+              <input type="range" class="slider" min="0" max="100" value="30" id="orbitSpeed" oninput="updateOrbitSpeed(this.value)">
+              <span class="speed-value" id="speedValue">1x</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🪐 行星详细信息</h3>
+            <div id="planetInfo" style="padding:20px;text-align:center;color:var(--text-secondary)">
+              点击左侧太阳系中的行星查看详细信息
+            </div>
+            <div class="chart-container small" id="planetChart"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📊 太阳系行星数据对比</h3>
+          <p class="data-source">数据来源：NASA行星科学数据库</p>
+          <div class="chart-container large" id="planetCompareChart"></div>
+        </div>
+      </div>
+
+      <div id="eclipse" class="tab-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🌑 日食月食模拟器</h3>
+            <div class="eclipse-simulator">
+              <div class="eclipse-canvas">
+                <div class="sun-eclipse" id="sunEclipse"></div>
+                <div class="moon-eclipse" id="moonEclipse"></div>
+              </div>
+              <div class="eclipse-type-display" id="eclipseType">日全食</div>
+            </div>
+            <div class="slider-container">
+              <span>时间</span>
+              <input type="range" class="slider" min="0" max="100" value="50" id="eclipseSlider" oninput="updateEclipse(this.value)">
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:16px">
+              <button class="btn" onclick="setEclipseType('solar')">日食模拟</button>
+              <button class="btn btn-secondary" onclick="setEclipseType('lunar')">月食模拟</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📅 下次日食月食</h3>
+            <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px">
+              <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+                <div style="font-size:0.85rem;color:var(--accent-cyan)">2026年8月12日</div>
+                <div style="font-weight:600;margin-top:4px">日全食</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">欧洲、北美、冰岛、格陵兰可见</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+                <div style="font-size:0.85rem;color:var(--accent-cyan)">2026年3月3日</div>
+                <div style="font-weight:600;margin-top:4px">月全食</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">亚洲、美洲、澳大利亚可见</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+                <div style="font-size:0.85rem;color:var(--accent-cyan)">2027年8月2日</div>
+                <div style="font-weight:600;margin-top:4px">日全食</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">北非、中东、南欧可见</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🔭 日食类型说明</h3>
+          <div class="grid-3" style="margin-top:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">☀️</div>
+              <div style="font-weight:600">日全食</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">月球完全遮住太阳<br>形成日冕</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">🌙</div>
+              <div style="font-weight:600">日偏食</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">月球只遮住部分太阳<br>形成贝利珠</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">💍</div>
+              <div style="font-weight:600">日环食</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">月球在远地点<br>形成火环</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sun-effect" class="tab-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3>☀️ 太阳活动模拟</h3>
+            <div class="solar-activity" style="margin-top:20px">
+              <div style="text-align:center">
+                <div class="sun-spot"></div>
+                <div style="font-size:0.8rem;margin-top:8px">太阳黑子</div>
+              </div>
+              <div style="text-align:center">
+                <div class="flare"></div>
+                <div style="font-size:0.8rem;margin-top:8px">太阳耀斑</div>
+              </div>
+              <div style="text-align:center">
+                <div class="prominence"></div>
+                <div style="font-size:0.8rem;margin-top:8px">日珥</div>
+              </div>
+            </div>
+            <p style="margin-top:20px;font-size:0.9rem;color:var(--text-secondary)">
+              太阳黑子是太阳表面温度较低的区域，温度约4000°C<br>
+              耀斑是太阳大气中的剧烈爆发现象<br>
+              日珥是从太阳表面升起的等离子体柱
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>🌌 极光生成器</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">调节太阳风强度和地球磁场强度，观察极光变化</p>
+            <div class="aurora-canvas">
+              <div class="aurora-wave" id="auroraWave"></div>
+            </div>
+            <div class="slider-container" style="margin-top:16px">
+              <span>太阳风</span>
+              <input type="range" class="slider" min="0" max="100" value="50" id="solarWind" oninput="updateAurora()">
+            </div>
+            <div class="slider-container">
+              <span>磁场</span>
+              <input type="range" class="slider" min="0" max="100" value="50" id="magneticField" oninput="updateAurora()">
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌍 太阳辐射与地球能量分布</h3>
+          <p class="data-source">数据来源：NASA CERES 项目</p>
+          <div class="chart-container large" id="solarRadiationChart"></div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📜 人类对太阳认识的历程</h3>
+          <div class="grid-4" style="margin-top:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">古代</div>
+              <div style="font-weight:600;margin-top:8px">神话解释</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">各民族用神话解释太阳</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">公元前300年</div>
+              <div style="font-weight:600;margin-top:8px">阿里斯塔克斯</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">提出日心说雏形</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">1610年</div>
+              <div style="font-weight:600;margin-top:8px">伽利略</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">望远镜观测太阳黑子</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">现代</div>
+              <div style="font-weight:600;margin-top:8px">卫星探测</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">SOHO、SDO等探测器</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="earth-compare" class="tab-content">
+        <div class="card">
+          <h3>🌍 地球真实卫星图对比</h3>
+          <p style="color:var(--text-secondary);margin-bottom:20px">通过卫星影像对比地球的不同视角与变化</p>
+          
+          <div style="background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3a 100%);border-radius:16px;padding:24px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+              <button class="btn active" onclick="showEarthView('full')" style="flex:1">🌏 完整地球</button>
+              <button class="btn" onclick="showEarthView('east')" style="flex:1">🌍 东半球</button>
+              <button class="btn" onclick="showEarthView('west')" style="flex:1">� 西半球</button>
+              <button class="btn" onclick="showEarthView('arctic')" style="flex:1">❄️ 北极</button>
+            </div>
+            
+            <div id="earth-globe-container" style="height:300px;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center, #1a237e 0%, #0d0d1a 100%);position:relative;">
+              <canvas id="earthCanvas" width="400" height="300" style="width:100%;height:100%"></canvas>
+              <div id="earth-info-overlay" style="position:absolute;bottom:16px;left:16px;right:16px;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);border-radius:12px;padding:16px;color:white;">
+                <div style="font-weight:600;color:var(--accent-cyan);margin-bottom:8px" id="viewTitle">🌏 完整地球视图</div>
+                <div style="font-size:0.9rem;color:#b0b0d0" id="viewDesc">展示从太空视角看到的完整地球，蓝色的海洋与绿色的大陆清晰可见</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2" style="gap:20px">
+            <div class="card" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)">
+              <h4 style="color:var(--accent-cyan)">🌡️ 全球温度分布</h4>
+              <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:8px">热带地区温度最高，两极地区温度最低，形成明显的纬度温度梯度</p>
+              <div style="margin-top:16px;height:120px;border-radius:8px;background:linear-gradient(90deg,#0077b6 0%,#06d6a0 25%,#ffd166 50%,#f7931e 75%,#e74c3c 100%);position:relative;">
+                <div style="position:absolute;top:4px;left:4px;font-size:0.75rem;color:white">北极 -40°C</div>
+                <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:0.75rem;color:black">赤道 30°C</div>
+                <div style="position:absolute;top:4px;right:4px;font-size:0.75rem;color:white">南极 -50°C</div>
+              </div>
+            </div>
+            
+            <div class="card" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)">
+              <h4 style="color:var(--accent-cyan)">🌊 海洋与陆地分布</h4>
+              <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:8px">地球表面约71%为海洋覆盖，29%为陆地，形成七大洲四大洋</p>
+              <div style="margin-top:16px;height:120px;border-radius:8px;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;width:100%;height:71%;background:linear-gradient(180deg,#023e8a 0%,#0077b6 100%);">
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:0.85rem">🌊 海洋 71%</div>
+                </div>
+                <div style="position:absolute;bottom:0;left:0;width:100%;height:29%;background:linear-gradient(180deg,#2d6a4f 0%,#1b4332 100%);">
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:0.85rem">🏔️ 陆地 29%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🗺️ 地球基本知识</h3>
+          <div class="grid-4" style="gap:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;font-weight:700;color:var(--accent-cyan)">40,075 km</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">赤道周长</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;font-weight:700;color:var(--accent-cyan)">6,371 km</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">平均半径</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;font-weight:700;color:var(--accent-cyan)">71%</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">海洋覆盖</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;font-weight:700;color:var(--accent-cyan)">46亿年</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">年龄</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="weight-calc" class="tab-content">
+        <div class="card" style="max-width:600px;margin:0 auto">
+          <h3>🏋️ 行星重力体验器</h3>
+          <p style="color:var(--text-secondary);margin-bottom:24px">输入你在地球上的体重，看看你在其他星球上的体重！</p>
+          <div class="weight-calculator">
+            <div class="input-group">
+              <label>你的体重 (kg)</label>
+              <input type="number" id="earthWeight" value="60" min="1" max="300" oninput="calculateWeights()">
+            </div>
+            <div id="weightResults"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="planetModal">
+    <div class="modal-content">
+      <h2 id="modalPlanetName"></h2>
+      <div id="modalPlanetContent"></div>
+      <div style="margin-top:24px;text-align:center">
+        <button class="btn" onclick="closeModal('planetModal')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>宇宙中的地球 | 数据来源：NASA、ESA、ESO等权威天文机构</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    let currentEclipseType = 'solar';
+    let orbitAnimationId;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'solar-system') initSolarSystemCharts();
+      if (tabId === 'sun-effect') initSolarRadiationChart();
+      if (tabId === 'earth-compare') drawEarthGlobe('full');
+    }
+
+    let earthRotation = 0;
+    let earthAnimationId;
+
+    function drawEarthGlobe(viewType) {
+      const canvas = document.getElementById('earthCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) * 0.35;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a365d';
+      ctx.fill();
+
+      const gradient = ctx.createRadialGradient(centerX - radius * 0.3, centerY - radius * 0.3, 0, centerX, centerY, radius);
+      gradient.addColorStop(0, '#4299e1');
+      gradient.addColorStop(0.5, '#2b6cb0');
+      gradient.addColorStop(1, '#1a365d');
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, radius, radius * 0.85, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      drawContinents(ctx, centerX, centerY, radius, viewType, earthRotation);
+
+      ctx.beginPath();
+      ctx.arc(centerX + radius * 0.3, centerY - radius * 0.2, radius * 0.15, 0, Math.PI * 2);
+      const cloudGradient = ctx.createRadialGradient(centerX + radius * 0.3, centerY - radius * 0.2, 0, centerX + radius * 0.3, centerY - radius * 0.2, radius * 0.15);
+      cloudGradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+      cloudGradient.addColorStop(1, 'rgba(255,255,255,0.1)');
+      ctx.fillStyle = cloudGradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(centerX - radius * 0.4, centerY + radius * 0.1, radius * 0.1, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fill();
+
+      earthRotation += 0.005;
+      if (earthRotation > Math.PI * 2) earthRotation = 0;
+
+      earthAnimationId = requestAnimationFrame(() => drawEarthGlobe(viewType));
+    }
+
+    function drawContinents(ctx, cx, cy, r, viewType, rotation) {
+      ctx.fillStyle = '#2f855a';
+      
+      const continentPoints = {
+        full: [
+          { points: [[-0.3, -0.15], [-0.15, -0.2], [-0.1, -0.1], [-0.2, 0.05], [-0.35, 0], [-0.3, -0.15]], scale: 1 },
+          { points: [[0.15, -0.1], [0.35, -0.15], [0.4, -0.05], [0.35, 0.1], [0.25, 0.05], [0.15, -0.05], [0.15, -0.1]], scale: 1 },
+          { points: [[-0.05, 0.1], [0.15, 0.15], [0.18, 0.35], [0.05, 0.45], [-0.1, 0.35], [-0.08, 0.15], [-0.05, 0.1]], scale: 0.9 },
+          { points: [[-0.5, -0.25], [-0.38, -0.2], [-0.35, -0.35], [-0.45, -0.4], [-0.52, -0.3], [-0.5, -0.25]], scale: 0.7 },
+          { points: [[0.25, 0.15], [0.45, 0.2], [0.5, 0.35], [0.35, 0.4], [0.25, 0.3], [0.25, 0.15]], scale: 0.8 },
+          { points: [[-0.15, 0.2], [-0.08, 0.3], [-0.12, 0.4], [-0.2, 0.35], [-0.18, 0.25], [-0.15, 0.2]], scale: 0.5 },
+        ],
+        east: [
+          { points: [[-0.4, -0.2], [-0.2, -0.25], [-0.15, -0.1], [-0.25, 0.1], [-0.45, 0.05], [-0.42, -0.15], [-0.4, -0.2]], scale: 1.2 },
+          { points: [[0.05, -0.1], [0.25, -0.15], [0.3, -0.05], [0.25, 0.1], [0.15, 0.05], [0.08, -0.05], [0.05, -0.1]], scale: 1.1 },
+          { points: [[0.05, 0.1], [0.2, 0.15], [0.25, 0.35], [0.1, 0.45], [-0.05, 0.35], [-0.02, 0.15], [0.05, 0.1]], scale: 1 },
+          { points: [[-0.15, 0.15], [-0.08, 0.25], [-0.12, 0.35], [-0.2, 0.3], [-0.18, 0.2], [-0.15, 0.15]], scale: 0.6 },
+        ],
+        west: [
+          { points: [[-0.4, -0.2], [-0.2, -0.25], [-0.15, -0.1], [-0.25, 0.1], [-0.45, 0.05], [-0.42, -0.15], [-0.4, -0.2]], scale: 1.2 },
+          { points: [[-0.1, 0.1], [0.1, 0.15], [0.15, 0.35], [0.02, 0.45], [-0.12, 0.35], [-0.1, 0.15], [-0.1, 0.1]], scale: 1.1 },
+          { points: [[0.2, 0.2], [0.35, 0.25], [0.4, 0.4], [0.28, 0.45], [0.18, 0.35], [0.2, 0.2]], scale: 0.9 },
+        ],
+        arctic: [
+          { points: [[-0.3, -0.2], [-0.15, -0.3], [-0.1, -0.15], [-0.2, 0.05], [-0.35, -0.05], [-0.3, -0.2]], scale: 1.5 },
+          { points: [[0.1, -0.25], [0.25, -0.3], [0.3, -0.15], [0.2, 0], [0.08, -0.1], [0.1, -0.25]], scale: 1.3 },
+          { points: [[-0.15, -0.35], [-0.05, -0.4], [0.02, -0.3], [-0.1, -0.2], [-0.15, -0.35]], scale: 1 },
+        ]
+      };
+
+      const points = continentPoints[viewType] || continentPoints.full;
+      
+      points.forEach(continent => {
+        ctx.beginPath();
+        continent.points.forEach((point, i) => {
+          const x = cx + point[0] * r * continent.scale;
+          const y = cy + point[1] * r * continent.scale;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+
+    function showEarthView(viewType) {
+      document.querySelectorAll('.earth-compare .btn').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const viewInfo = {
+        full: { title: '🌏 完整地球视图', desc: '展示从太空视角看到的完整地球，蓝色的海洋与绿色的大陆清晰可见。地球是太阳系中唯一有生命存在的星球。' },
+        east: { title: '🌍 东半球', desc: '包含亚洲、欧洲、非洲和大洋洲。这里是人类文明的发源地，拥有世界上最多的人口和最古老的文明。' },
+        west: { title: '🌎 西半球', desc: '包含北美洲和南美洲。拥有丰富的自然资源和多样的生态系统，亚马逊雨林是地球之肺。' },
+        arctic: { title: '❄️ 北极视角', desc: '从北极上空俯瞰，北冰洋被陆地包围。北极冰盖正在随着全球变暖而逐渐融化。' }
+      };
+
+      document.getElementById('viewTitle').textContent = viewInfo[viewType].title;
+      document.getElementById('viewDesc').textContent = viewInfo[viewType].desc;
+
+      if (earthAnimationId) cancelAnimationFrame(earthAnimationId);
+      drawEarthGlobe(viewType);
+    }
+
+    function showPlanetInfo(planet) {
+      const planetData = {
+        sun: {
+          name: '太阳',
+          emoji: '☀️',
+          mass: '333,000 个地球质量',
+          radius: '109 个地球半径',
+          temp: '5,500°C (表面)',
+          desc: '太阳是太阳系的中心天体，占据了太阳系99.86%的质量。它是一颗黄矮星，年龄约46亿年。'
+        },
+        mercury: {
+          name: '水星',
+          emoji: '☿️',
+          mass: '0.055 个地球质量',
+          radius: '0.383 个地球半径',
+          orbit: '88 个地球日',
+          temp: '-173°C 至 427°C',
+          desc: '水星是太阳系中最小的行星，也是离太阳最近的行星。它的一天相当于59个地球日。'
+        },
+        venus: {
+          name: '金星',
+          emoji: '♀️',
+          mass: '0.815 个地球质量',
+          radius: '0.95 个地球半径',
+          orbit: '225 个地球日',
+          temp: '464°C (平均)',
+          desc: '金星是太阳系中最热的行星，有着浓厚的二氧化碳大气层，温室效应极强。'
+        },
+        earth: {
+          name: '地球',
+          emoji: '🌍',
+          mass: '1 个地球质量',
+          radius: '1 个地球半径 (6,371 km)',
+          orbit: '365.25 个地球日',
+          temp: '-88°C 至 58°C',
+          desc: '地球是目前已知唯一存在生命的星球，拥有液态水、适宜的大气层和磁场。'
+        },
+        mars: {
+          name: '火星',
+          emoji: '♂️',
+          mass: '0.107 个地球质量',
+          radius: '0.532 个地球半径',
+          orbit: '687 个地球日',
+          temp: '-140°C 至 20°C',
+          desc: '火星被称为"红色星球"，有着太阳系最大的火山（奥林匹斯山）和最深的峡谷（水手谷）。'
+        },
+        jupiter: {
+          name: '木星',
+          emoji: '♃',
+          mass: '317.8 个地球质量',
+          radius: '11.21 个地球半径',
+          orbit: '11.86 个地球年',
+          temp: '-145°C',
+          desc: '木星是太阳系最大的行星，是一颗气态巨行星，著名的大红斑是一个巨大的风暴。'
+        },
+        saturn: {
+          name: '土星',
+          emoji: '♄',
+          mass: '95.2 个地球质量',
+          radius: '9.45 个地球半径',
+          orbit: '29.46 个地球年',
+          temp: '-178°C',
+          desc: '土星以其美丽的光环而闻名，主要由冰和岩石组成。它的密度比水还低。'
+        },
+        uranus: {
+          name: '天王星',
+          emoji: '♅',
+          mass: '14.5 个地球质量',
+          radius: '4.01 个地球半径',
+          orbit: '84 个地球年',
+          temp: '-224°C',
+          desc: '天王星是一颗"躺着"的行星，自转轴几乎与公转轨道面平行。它是一颗冰巨星。'
+        },
+        neptune: {
+          name: '海王星',
+          emoji: '♆',
+          mass: '17.1 个地球质量',
+          radius: '3.88 个地球半径',
+          orbit: '164.8 个地球年',
+          temp: '-218°C',
+          desc: '海王星是太阳系最外层的行星，有着最强的风暴，风速可达2,100公里/小时。'
+        }
+      };
+
+      const data = planetData[planet];
+      if (!data) return;
+
+      document.getElementById('planetInfo').innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:3rem;margin-bottom:16px;">${data.emoji}</div>
+          <h3 style="margin-bottom:16px;">${data.name}</h3>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;">
+            <div style="font-size:0.85rem;color:var(--text-secondary);">质量</div>
+            <div style="font-weight:600;">${data.mass}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;">
+            <div style="font-size:0.85rem;color:var(--text-secondary);">半径</div>
+            <div style="font-weight:600;">${data.radius}</div>
+          </div>
+          ${data.orbit ? `<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"><div style="font-size:0.85rem;color:var(--text-secondary);">公转周期</div><div style="font-weight:600;">${data.orbit}</div></div>` : ''}
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;">
+            <div style="font-size:0.85rem;color:var(--text-secondary);">表面温度</div>
+            <div style="font-weight:600;">${data.temp}</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;">
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;">简介</div>
+          <div>${data.desc}</div>
+        </div>
+      `;
+      GeoApp.saveProgress('sheet2', { viewedPlanet: planet });
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function updateOrbitSpeed(value) {
+      const speed = Math.max(0.1, value / 30);
+      document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
+      const orbits = document.querySelectorAll('.planet-orbit');
+      const baseDurations = {
+        'orbit-mercury': 4,
+        'orbit-venus': 7,
+        'orbit-earth': 10,
+        'orbit-mars': 15,
+        'orbit-jupiter': 25,
+        'orbit-saturn': 35,
+        'orbit-uranus': 50,
+        'orbit-neptune': 60
+      };
+      orbits.forEach(orbit => {
+        const className = orbit.className.split(' ').find(c => c.startsWith('orbit-'));
+        const baseDuration = baseDurations[className] || 10;
+        orbit.style.animationDuration = (baseDuration / speed) + 's';
+      });
+    }
+
+    function updateEclipse(value) {
+      const moon = document.getElementById('moonEclipse');
+      const sun = document.getElementById('sunEclipse');
+      const type = document.getElementById('eclipseType');
+
+      if (currentEclipseType === 'solar') {
+        const offset = (value - 50) * 3;
+        moon.style.transform = `translate(calc(-50% + ${offset}px), -50%)`;
+        const coverage = Math.abs(value - 50) / 50;
+        if (value < 30) type.textContent = '日偏食';
+        else if (value < 70) type.textContent = '日全食';
+        else type.textContent = '日环食';
+      } else {
+        moon.style.transform = `translate(-50%, calc(-50% + ${(value - 50) * 2}px))`;
+        const earthShadow = value < 50 ? '月全食' : '月偏食';
+        type.textContent = earthShadow;
+      }
+    }
+
+    function setEclipseType(type) {
+      currentEclipseType = type;
+      updateEclipse(50);
+    }
+
+    function updateAurora() {
+      const wind = document.getElementById('solarWind').value;
+      const field = document.getElementById('magneticField').value;
+      const wave = document.getElementById('auroraWave');
+      const intensity = wind * field / 100;
+      wave.style.opacity = intensity / 100;
+      wave.style.animationDuration = (10 - wind / 10) + 's';
+    }
+
+    function initSolarSystemCharts() {
+      const chartEl = document.getElementById('planetCompareChart');
+      if (!chartEl || document.getElementById('solar-system').classList.contains('hidden')) return;
+
+      const chart = echarts.init(chartEl);
+      const planets = ['水星', '金星', '地球', '火星', '木星', '土星', '天王星', '海王星'];
+      const masses = [0.055, 0.815, 1, 0.107, 317.8, 95.2, 14.5, 17.1];
+      const radii = [0.383, 0.95, 1, 0.532, 11.21, 9.45, 4.01, 3.88];
+
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['相对质量', '相对半径'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: planets, axisLabel: { color: '#b0b0d0' } },
+        yAxis: [
+          { type: 'log', name: '相对质量', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+          { type: 'value', name: '相对半径', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } }
+        ],
+        series: [
+          { name: '相对质量', type: 'bar', data: masses, itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#00d4ff' }, { offset: 1, color: '#0066cc' }]) } },
+          { name: '相对半径', type: 'bar', yAxisIndex: 1, data: radii, itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#ff8c00' }, { offset: 1, color: '#cc4400' }]) } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initSolarRadiationChart() {
+      const chartEl = document.getElementById('solarRadiationChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      const latitudes = ['0°', '10°', '20°', '30°', '40°', '50°', '60°', '70°', '80°', '90°'];
+      const juneRadiation = [442, 436, 410, 364, 299, 224, 147, 74, 27, 5];
+      const decRadiation = [408, 382, 324, 248, 161, 78, 21, 0, 0, 0];
+
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['6月辐射量', '12月辐射量'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: latitudes, name: '纬度', axisLabel: { color: '#b0b0d0' }, nameLocation: 'middle', nameGap: 30 },
+        yAxis: { type: 'value', name: 'W/m²', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [
+          { name: '6月辐射量', type: 'line', smooth: true, data: juneRadiation, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255, 140, 0, 0.5)' }, { offset: 1, color: 'rgba(255, 140, 0, 0)' }]) }, lineStyle: { color: '#ff8c00' }, itemStyle: { color: '#ff8c00' } },
+          { name: '12月辐射量', type: 'line', smooth: true, data: decRadiation, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0, 180, 216, 0.5)' }, { offset: 1, color: 'rgba(0, 180, 216, 0)' }]) }, lineStyle: { color: '#00b4d8' }, itemStyle: { color: '#00b4d8' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function calculateWeights() {
+      const weight = parseFloat(document.getElementById('earthWeight').value) || 60;
+      const planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'moon', 'sun'];
+      const names = { mercury: '水星', venus: '金星', earth: '地球', mars: '火星', jupiter: '木星', saturn: '土星', uranus: '天王星', neptune: '海王星', moon: '月球', sun: '太阳' };
+
+      let html = '<div class="grid-2" style="margin-top:16px">';
+      planets.forEach(p => {
+        const newWeight = GeoApp.calculateWeight(weight, p);
+        html += `
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:0.85rem;color:var(--text-secondary)">${names[p]}</div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan)">${newWeight} kg</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      document.getElementById('weightResults').innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initSolarSystemCharts();
+      calculateWeights();
+      updateAurora();
+    });
+  </script>
+</body>
+</html>

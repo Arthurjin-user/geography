@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自然灾害 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .typhoon-sim {
+      width: 100%;
+      height: 350px;
+      background: radial-gradient(ellipse at center, #2980b9 0%, #1a5276 40%, #0d1f33 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .typhoon-eye {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, #ffffff 0%, #f1c40f 40%, #e74c3c 100%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: typhoonSpin 3s linear infinite;
+      box-shadow: 0 0 60px rgba(231, 76, 60, 0.7), 0 0 100px rgba(241, 196, 15, 0.3);
+    }
+
+    @keyframes typhoonSpin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .typhoon-arm {
+      position: absolute;
+      width: 120px;
+      height: 15px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0.3), transparent);
+      top: 50%;
+      left: 50%;
+      transform-origin: left center;
+      border-radius: 50%;
+      animation: armWave 2s ease-in-out infinite;
+    }
+
+    @keyframes armWave {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.4; }
+    }
+
+    .typhoon-ring {
+      position: absolute;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: ringExpand 4s ease-out infinite;
+    }
+
+    @keyframes ringExpand {
+      0% { width: 80px; height: 80px; opacity: 0.8; }
+      100% { width: 300px; height: 300px; opacity: 0; }
+    }
+
+    .flood-map {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #87ceeb, #3498db);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flood-zone {
+      position: absolute;
+      background: radial-gradient(ellipse, rgba(52, 152, 219, 0.6), transparent);
+      border-radius: 50%;
+      animation: floodPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes floodPulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .tornado-3d {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(to bottom, #1a1a2e, #16213e, #0f3460);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      perspective: 500px;
+    }
+
+    .tornado-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .tornado-funnel {
+      width: 100px;
+      height: 200px;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: tornadoRotate 3s linear infinite;
+    }
+
+    @keyframes tornadoRotate {
+      from { transform: rotateX(15deg) rotateZ(0deg); }
+      to { transform: rotateX(15deg) rotateZ(360deg); }
+    }
+
+    .tornado-ring {
+      position: absolute;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    .tornado-ring:nth-child(1) { width: 80px; height: 80px; top: 0; left: 10px; }
+    .tornado-ring:nth-child(2) { width: 70px; height: 70px; top: 30px; left: 15px; }
+    .tornado-ring:nth-child(3) { width: 60px; height: 60px; top: 60px; left: 20px; }
+    .tornado-ring:nth-child(4) { width: 50px; height: 50px; top: 90px; left: 25px; }
+    .tornado-ring:nth-child(5) { width: 40px; height: 40px; top: 120px; left: 30px; }
+    .tornado-ring:nth-child(6) { width: 30px; height: 30px; top: 150px; left: 35px; }
+    .tornado-ring:nth-child(7) { width: 20px; height: 20px; top: 175px; left: 40px; }
+
+    .tornado-vortex {
+      position: absolute;
+      width: 100px;
+      height: 200px;
+      background: linear-gradient(180deg, 
+        rgba(255,255,255,0.1) 0%, 
+        rgba(200,200,200,0.3) 30%, 
+        rgba(150,150,150,0.5) 70%, 
+        rgba(100,100,100,0.7) 100%);
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      animation: vortexPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes vortexPulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 0.9; }
+    }
+
+    .tornado-debris {
+      position: absolute;
+      font-size: 1.2rem;
+      animation: debrisFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes debrisFloat {
+      0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateY(-150px) translateX(30px) rotate(360deg); opacity: 0; }
+    }
+
+    .earthquake-wave {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(to top, #8b7355, #6b5344);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .seismic-wave {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(231, 76, 60, 0.8);
+      border-radius: 50%;
+      animation: seismicExpand 2s ease-out infinite;
+    }
+
+    @keyframes seismicExpand {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(4); opacity: 0; }
+    }
+
+    .landslide-demo {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #27ae60 0%, #8b7355 60%, #3498db 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .landslide-mass {
+      width: 80px;
+      height: 60px;
+      background: linear-gradient(135deg, #27ae60, #1e8449);
+      border-radius: 8px;
+      position: absolute;
+      top: 20%;
+      left: 30%;
+      transform: rotate(15deg);
+      transition: all 1s ease;
+    }
+
+    .escape-room {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+
+    .room-zone {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.5rem;
+    }
+
+    .room-zone:hover {
+      background: rgba(39, 174, 96, 0.3);
+    }
+
+    .room-zone.danger {
+      background: rgba(231, 76, 60, 0.5);
+    }
+
+    .room-zone.safe {
+      background: rgba(39, 174, 96, 0.5);
+    }
+
+    .backpack-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .item-card {
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .item-card:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .item-card.selected {
+      border-color: var(--accent-green);
+      background: rgba(39, 174, 96, 0.2);
+    }
+
+    .item-card.wrong {
+      border-color: var(--accent-red);
+      background: rgba(231, 76, 60, 0.2);
+    }
+
+    .safety-guide {
+      display: grid;
+      gap: 16px;
+    }
+
+    .guide-card {
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid var(--accent-cyan);
+    }
+
+    .disaster-stat {
+      display: flex;
+      gap: 20px;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body data-theme="disaster">
+  <nav class="nav-bar" style="background:rgba(74,21,21,0.95)">
+    <div class="nav-brand">⚠️ 自然灾害</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link active">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('meteorological')">气象灾害</button>
+        <button class="tab" onclick="switchTab('geological')">地质灾害</button>
+        <button class="tab" onclick="switchTab('prevention')">防灾减灾</button>
+      </div>
+
+      <div id="meteorological" class="tab-content active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🌀 台风生命周期</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击播放按钮，观看台风从生成到消亡的完整动态过程</p>
+            <div style="display:flex;gap:12px;margin-bottom:16px">
+              <button class="btn" onclick="playTyphoonAnimation()">▶️ 播放动画</button>
+              <button class="btn btn-secondary" onclick="resetTyphoonAnimation()">🔄 重置</button>
+            </div>
+            <div class="typhoon-sim">
+              <div id="typhoonPhase" style="position:absolute;top:10px;left:10px;font-size:0.9rem;color:rgba(255,255,255,0.9);font-weight:bold">🌀 阶段1: 热带扰动</div>
+              <div class="typhoon-eye" id="typhoonEye"></div>
+              <div class="typhoon-ring" id="ring1" style="animation-delay:0s"></div>
+              <div class="typhoon-ring" id="ring2" style="animation-delay:1s"></div>
+              <div class="typhoon-ring" id="ring3" style="animation-delay:2s"></div>
+              <div class="typhoon-ring" id="ring4" style="animation-delay:3s"></div>
+              <div class="typhoon-arm" id="arm1" style="transform: translate(0, -50%) rotate(0deg); animation-delay:0s"></div>
+              <div class="typhoon-arm" id="arm2" style="transform: translate(0, -50%) rotate(45deg); animation-delay:0.25s"></div>
+              <div class="typhoon-arm" id="arm3" style="transform: translate(0, -50%) rotate(90deg); animation-delay:0.5s"></div>
+              <div class="typhoon-arm" id="arm4" style="transform: translate(0, -50%) rotate(135deg); animation-delay:0.75s"></div>
+              <div class="typhoon-arm" id="arm5" style="transform: translate(0, -50%) rotate(180deg); animation-delay:1s"></div>
+              <div class="typhoon-arm" id="arm6" style="transform: translate(0, -50%) rotate(225deg); animation-delay:1.25s"></div>
+              <div class="typhoon-arm" id="arm7" style="transform: translate(0, -50%) rotate(270deg); animation-delay:1.5s"></div>
+              <div class="typhoon-arm" id="arm8" style="transform: translate(0, -50%) rotate(315deg); animation-delay:1.75s"></div>
+              <div id="typhoonWindSpeed" style="position:absolute;bottom:10px;right:10px;font-size:0.85rem;color:rgba(255,255,255,0.8)">风速: -- m/s</div>
+            </div>
+            <div id="typhoonDescription" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <p><strong>当前阶段：</strong>等待动画开始...</p>
+            </div>
+            <div class="grid-4" style="margin-top:16px">
+              <div class="phase-card" id="phase1" style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center">
+                <div style="font-size:0.8rem;color:var(--accent-cyan)">🌱 热带低压</div>
+                <div style="font-size:0.7rem;opacity:0.7"><17m/s</div>
+              </div>
+              <div class="phase-card" id="phase2" style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center">
+                <div style="font-size:0.8rem;color:var(--accent-yellow)">🌪️ 热带风暴</div>
+                <div style="font-size:0.7rem;opacity:0.7">17-33m/s</div>
+              </div>
+              <div class="phase-card" id="phase3" style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center">
+                <div style="font-size:0.8rem;color:var(--accent-orange)">🌀 强热带风暴</div>
+                <div style="font-size:0.7rem;opacity:0.7">33-42m/s</div>
+              </div>
+              <div class="phase-card" id="phase4" style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center">
+                <div style="font-size:0.8rem;color:var(--accent-red)">👑 台风/超强台风</div>
+                <div style="font-size:0.7rem;opacity:0.7">>42m/s</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🌊 暴雨与洪涝</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">暴雨如何引发洪涝灾害</p>
+            <div class="flood-map">
+              <div class="rain-drop" style="left:10%;top:10%;animation-delay:0s"></div>
+              <div class="rain-drop" style="left:30%;top:5%;animation-delay:0.3s"></div>
+              <div class="rain-drop" style="left:50%;top:15%;animation-delay:0.6s"></div>
+              <div class="rain-drop" style="left:70%;top:8%;animation-delay:0.9s"></div>
+              <div class="rain-drop" style="left:90%;top:12%;animation-delay:1.2s"></div>
+              <div class="rain-drop" style="left:20%;top:5%;animation-delay:0.4s"></div>
+              <div class="rain-drop" style="left:60%;top:3%;animation-delay:0.7s"></div>
+              <div class="rain-drop" style="left:80%;top:6%;animation-delay:1s"></div>
+              
+              <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,#1e3a5f,#0d2137);border-radius:0 0 16px 16px"></div>
+              
+              <div class="flood-zone" id="floodZone1" style="width:30%;height:25%;top:55%;left:15%"></div>
+              <div class="flood-zone" id="floodZone2" style="width:40%;height:30%;top:50%;left:45%"></div>
+              <div class="flood-zone" id="floodZone3" style="width:25%;height:20%;top:60%;left:75%"></div>
+              
+              <div style="position:absolute;top:30px;left:30px;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:8px;font-size:0.85rem;color:white">
+                ☔ <strong>强降雨区</strong><br>
+                <span style="font-size:0.7rem">降雨量 > 100mm/h</span>
+              </div>
+              <div style="position:absolute;bottom:60px;left:20%;background:rgba(30,58,95,0.9);padding:8px 12px;border-radius:8px;font-size:0.85rem;color:white">
+                🏙️ <strong>城市建筑群</strong><br>
+                <span style="font-size:0.7rem">硬化地面占比高</span>
+              </div>
+              <div style="position:absolute;bottom:50px;right:20%;background:rgba(41,128,185,0.9);padding:8px 12px;border-radius:8px;font-size:0.85rem;color:white">
+                💧 <strong>积水区域</strong><br>
+                <span style="font-size:0.7rem">水深 > 30cm</span>
+              </div>
+              <div style="position:absolute;top:50%;right:10%;background:rgba(231,76,60,0.9);padding:8px 12px;border-radius:8px;font-size:0.85rem;color:white">
+                ⚠️ <strong>危险区域</strong><br>
+                <span style="font-size:0.7rem">请勿进入</span>
+              </div>
+              <div class="water-flow" style="top:45%;left:30%;width:80px;height:4px;"></div>
+              <div class="water-flow" style="top:48%;left:50%;width:100px;height:4px;transform:rotate(15deg);"></div>
+              <div class="water-flow" style="top:52%;left:20%;width:60px;height:4px;transform:rotate(-10deg);"></div>
+            </div>
+            <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <h4 style="color:var(--accent-cyan);margin-bottom:8px">📋 洪涝形成过程详解</h4>
+              <div class="grid-4" style="gap:12px">
+                <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                  <div style="font-weight:600;color:var(--accent-yellow)">1️⃣ 强降雨</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">短时间内大量降水</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                  <div style="font-weight:600;color:var(--accent-yellow)">2️⃣ 地表径流</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">雨水无法下渗</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                  <div style="font-weight:600;color:var(--accent-yellow)">3️⃣ 汇集积水</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">低洼处积水</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                  <div style="font-weight:600;color:var(--accent-yellow)">4️⃣ 洪涝灾害</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">造成灾害损失</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <div class="card" style="margin-top:24px">
+          <h3>🥶 寒潮路径与影响</h3>
+          <div class="chart-container" id="coldWaveChart"></div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌪️ 龙卷风形成3D解析</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击下方按钮，分步观看龙卷风形成过程</p>
+          
+          <div class="grid-2" style="gap:12px;margin-bottom:20px">
+            <button class="btn btn-secondary" onclick="showTornadoStep(1)">1️⃣ 初始条件</button>
+            <button class="btn btn-secondary" onclick="showTornadoStep(2)">2️⃣ 旋转开始</button>
+            <button class="btn btn-secondary" onclick="showTornadoStep(3)">3️⃣ 漏斗形成</button>
+            <button class="btn btn-secondary" onclick="showTornadoStep(4)">4️⃣ 完全形成</button>
+          </div>
+
+          <div class="tornado-3d" id="tornadoScene">
+            <div id="tornadoLabel" style="position:absolute;top:10px;left:10px;font-size:0.85rem;color:rgba(255,255,255,0.9);font-weight:bold">🌪️ 龙卷风形成阶段</div>
+            <div class="tornado-container">
+              <div class="tornado-funnel" id="tornadoFunnel">
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+                <div class="tornado-ring"></div>
+              </div>
+              <div class="tornado-vortex" id="tornadoVortex"></div>
+              <div class="tornado-debris" style="top:180px;left:-30px;animation-delay:0s">🍂</div>
+              <div class="tornado-debris" style="top:170px;left:100px;animation-delay:1s">🍁</div>
+              <div class="tornado-debris" style="top:160px;left:-20px;animation-delay:2s">🌿</div>
+              <div class="tornado-debris" style="top:150px;left:90px;animation-delay:3s">🌾</div>
+            </div>
+            <div id="tornadoSpeed" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:0.85rem;color:rgba(255,255,255,0.8)">中心风速：-- km/h</div>
+          </div>
+
+          <div id="tornadoInfo" style="margin-top:20px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;border-left:4px solid var(--accent-orange)">
+            <h4 style="color:var(--accent-cyan);margin-bottom:12px">📋 龙卷风基础知识</h4>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+              <div>
+                <div style="font-weight:600;color:var(--accent-yellow)">💨 风速范围</div>
+                <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px">120-500 km/h</div>
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--accent-yellow)">⏱️ 持续时间</div>
+                <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px">几秒到数十分钟</div>
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--accent-yellow)">📍 路径长度</div>
+                <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px">几十米到几十公里</div>
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--accent-yellow)">🌡️ 中心气压</div>
+                <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px">比周围低10-20%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-4" style="margin-top:20px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌡️</div>
+              <div style="font-weight:600;color:var(--accent-cyan)">大气不稳定</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">暖湿空气上升，冷空气下沉</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:1.5rem;margin-bottom:8px">🔄</div>
+              <div style="font-weight:600;color:var(--accent-yellow)">风切变</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">不同高度风速风向不同</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌀</div>
+              <div style="font-weight:600;color:var(--accent-orange)">旋转增强</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">水平旋转被拉伸成垂直</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌪️</div>
+              <div style="font-weight:600;color:var(--accent-red)">漏斗接地</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">形成完整的龙卷风</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="geological" class="tab-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3>📊 地震波传播动画</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击下方按钮，触发地震波演示（展示地球内部结构：地壳、地幔、地核）</p>
+            <div style="display:flex;gap:12px;margin-bottom:16px">
+              <button class="btn btn-secondary" onclick="triggerEarthquake('small')">🌍 小型地震 (M<5)</button>
+              <button class="btn btn-secondary" onclick="triggerEarthquake('medium')">🌍 中型地震 (5≤M<7)</button>
+              <button class="btn btn-secondary" onclick="triggerEarthquake('large')">🌍 大型地震 (M≥7)</button>
+            </div>
+            <div class="earthquake-wave" id="earthquakeDemo">
+              <div class="earth-core" id="innerCore"></div>
+              <div class="earth-core" id="outerCore"></div>
+              <div class="earth-mantle" id="mantle"></div>
+              <div class="earth-crust" id="crust"></div>
+              <div style="position:absolute;top:20px;left:20px;font-size:0.75rem;color:white">
+                <div style="color:#9b59b6">🧱 地壳 (0-30km)</div>
+              </div>
+              <div style="position:absolute;top:45px;left:20px;font-size:0.75rem;color:white">
+                <div style="color:#3498db">🟢 地幔 (30-2900km)</div>
+              </div>
+              <div style="position:absolute;top:70px;left:20px;font-size:0.75rem;color:white">
+                <div style="color:#e67e22">🟠 外核 (2900-5100km)</div>
+              </div>
+              <div style="position:absolute;top:95px;left:20px;font-size:0.75rem;color:white">
+                <div style="color:#e74c3c">🔴 内核 (>5100km)</div>
+              </div>
+              <div class="seismic-wave" id="pWave" style="top:50%;left:50%;border-color:var(--accent-cyan)"></div>
+              <div class="seismic-wave" id="sWave" style="top:50%;left:50%;border-color:var(--accent-orange);display:none"></div>
+            </div>
+            <div id="earthquakeInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+              <div style="font-weight:600;color:var(--accent-cyan)">点击上方按钮观看地震波传播</div>
+            </div>
+            <div class="grid-2" style="margin-top:16px">
+              <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+                <div style="font-weight:600;color:var(--accent-cyan)">P波 (纵波)</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">传播速度快(6-8km/s)<br>先到达，引起上下颠簸</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+                <div style="font-weight:600;color:var(--accent-orange)">S波 (横波)</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">传播速度慢(3-5km/s)<br>后到达，引起左右摇晃</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🏠 地震安全角寻找</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">房间中最安全的避震位置示意（答案已标出）</p>
+            <div style="margin-bottom:16px;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px">
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px"><strong>📍 图例说明：</strong></div>
+              <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.8rem">
+                <span>🛋️ 沙发</span>
+                <span>📺 电视</span>
+                <span>🚪 门</span>
+                <span>🪟 窗户</span>
+                <span>🛏️ 床</span>
+                <span>📚 书架</span>
+                <span>🍳 厨房</span>
+                <span>🚿 卫生间</span>
+                <span>🪑 桌子</span>
+                <span>🗄️ 柜子</span>
+                <span>🌱 植物</span>
+                <span>🧹 扫帚</span>
+              </div>
+            </div>
+            <div class="escape-room" id="escapeRoom">
+              <div class="room-zone danger">🛋️<span class="label">危险</span></div>
+              <div class="room-zone danger">📺<span class="label">危险</span></div>
+              <div class="room-zone safe">🚪<span class="label">较安全</span></div>
+              <div class="room-zone danger">🪟<span class="label">危险</span></div>
+              <div class="room-zone danger">🛏️<span class="label">危险</span></div>
+              <div class="room-zone best">📚<span class="label">最佳</span></div>
+              <div class="room-zone danger">🍳<span class="label">危险</span></div>
+              <div class="room-zone safe">🚿<span class="label">较安全</span></div>
+              <div class="room-zone best">🪑<span class="label">最佳</span></div>
+              <div class="room-zone danger">🗄️<span class="label">危险</span></div>
+              <div class="room-zone safe">🌱<span class="label">较安全</span></div>
+              <div class="room-zone danger">🧹<span class="label">危险</span></div>
+            </div>
+            <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <h4 style="color:var(--accent-cyan);margin-bottom:8px">📋 地震避险知识</h4>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div style="background:rgba(46,204,113,0.2);padding:12px;border-radius:8px;border-left:4px solid #2ecc71">
+                  <div style="font-weight:600;color:#2ecc71">✅ 最佳位置</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">坚固家具下方、承重墙墙角</div>
+                </div>
+                <div style="background:rgba(241,196,15,0.2);padding:12px;border-radius:8px;border-left:4px solid #f1c40f">
+                  <div style="font-weight:600;color:#f1c40f">⚠️ 较安全</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">卫生间、无玻璃窗区域</div>
+                </div>
+                <div style="background:rgba(231,76,60,0.2);padding:12px;border-radius:8px;border-left:4px solid #e74c3c">
+                  <div style="font-weight:600;color:#e74c3c">❌ 危险区域</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">窗户旁、吊灯下、电梯内</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>⛰️ 滑坡与泥石流</h3>
+          <div class="landslide-demo">
+            <div style="position:absolute;top:5%;left:5%;font-size:0.85rem;color:white;">
+              🏔️ <strong>陡峭山坡</strong>
+            </div>
+            <div style="position:absolute;top:20%;left:25%;font-size:0.85rem;color:white;">
+              🌧️ <strong>暴雨冲刷</strong>
+            </div>
+            <div style="position:absolute;bottom:30%;left:5%;font-size:0.85rem;color:white;">
+              🪨 <strong>松散土体</strong>
+            </div>
+            <div style="position:absolute;bottom:10%;right:10%;font-size:0.85rem;color:white;">
+              🏠 <strong>危险区域</strong>
+            </div>
+            <div class="landslide-terrain"></div>
+            <div class="landslide-mass" id="landslideMass"></div>
+            <div class="mud-flow" id="mudFlow"></div>
+            <div class="debris-item" id="debris1">🪨</div>
+            <div class="debris-item" id="debris2">🌲</div>
+            <div class="debris-item" id="debris3">🗿</div>
+          </div>
+          <div style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <h4 style="color:var(--accent-cyan);margin-bottom:8px">📋 滑坡与泥石流形成条件</h4>
+            <div class="grid-4" style="gap:12px">
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                <div style="font-weight:600;color:var(--accent-yellow)">🌧️ 降水条件</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">暴雨或持续降雨</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                <div style="font-weight:600;color:var(--accent-yellow)">⛰️ 地形条件</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">坡度大于25度</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                <div style="font-weight:600;color:var(--accent-yellow)">🪨 物质条件</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">松散堆积物丰富</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+                <div style="font-weight:600;color:var(--accent-yellow)">🔨 触发因素</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">地震、人类活动</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌋 火山喷发模拟</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">火山喷发是地球内部能量释放的剧烈表现形式</p>
+          <div class="slider-container" style="margin-top:16px">
+            <span>喷发强度</span>
+            <input type="range" class="slider" min="1" max="10" value="5" id="volcanoIntensity" oninput="updateVolcano()">
+            <span id="volcanoIntensityValue">5</span>
+          </div>
+          <div id="volcanoInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <div style="font-weight:600;color:#e74c3c">中等强度喷发</div>
+            <div style="font-size:0.9rem;margin-top:8px;color:var(--text-secondary)">火山灰可达平流层，影响全球气候</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🏃 火山喷发逃生时间计算</h3>
+          <div class="grid-2" style="margin-top:16px">
+            <div class="input-group">
+              <label>距火山口距离 (km)</label>
+              <input type="number" id="volcanoDistance" value="10">
+            </div>
+            <div class="input-group">
+              <label>喷发类型</label>
+              <select id="eruptionType" style="color:#333;background:#fff">
+                <option value="effusive" style="color:#333">🌋 溢流式喷发</option>
+                <option value="explosive" style="color:#333">💥 爆炸式喷发</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:16px">
+            <button class="btn" onclick="calculateEscapeTime()">计算逃生时间</button>
+          </div>
+          <div id="escapeTimeResult" style="margin-top:16px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-size:0.9rem;color:var(--text-secondary)">预计安全逃生时间</div>
+            <div style="font-size:2rem;font-weight:700;color:var(--accent-green)">-- 分钟</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="prevention" class="tab-content">
+        <div class="card">
+            <h3>🎒 应急背包物品选择</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">从以下物品中选择最必要的应急物品放入背包（选择6个最必需的）</p>
+            <div class="backpack-grid" id="backpackGrid">
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">💧 饮用水</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">🍞 压缩饼干</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">📱 手机</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">💊 急救包</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">🔦 手电筒</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="true">👕 保暖衣物</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="false">🧰 多功能刀</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="false">🔧 工具包</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="false">🧵 针线包</div>
+              <div class="item-card" onclick="toggleItem(this)" data-essential="false">🗺️ 地图</div>
+            </div>
+            <div id="backpackResult" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+              <div style="font-weight:600;color:var(--accent-cyan)">已选择: 0/6 必要物品</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">请选择6个最必要的应急物品</div>
+            </div>
+          </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📚 各类灾害避灾指南</h3>
+          <div class="safety-guide" style="margin-top:16px">
+            <div class="guide-card">
+              <div style="font-weight:600;color:var(--accent-cyan)">🌋 地震</div>
+              <ul style="margin-top:8px;margin-left:20px;font-size:0.9rem">
+                <li>就近躲在坚固家具下</li>
+                <li>远离窗户、玻璃制品</li>
+                <li>用手保护头部</li>
+                <li>震后有序疏散到空旷地带</li>
+              </ul>
+            </div>
+            <div class="guide-card">
+              <div style="font-weight:600;color:var(--accent-red)">🔥 火灾</div>
+              <ul style="margin-top:8px;margin-left:20px;font-size:0.9rem">
+                <li>低姿势逃离，用湿毛巾捂口鼻</li>
+                <li>不乘坐电梯，走楼梯</li>
+                <li>无法逃离时躲进洗手间</li>
+                <li>身上着火时就地打滚</li>
+              </ul>
+            </div>
+            <div class="guide-card">
+              <div style="font-weight:600;color:var(--accent-blue)">🌊 洪水</div>
+              <ul style="margin-top:8px;margin-left:20px;font-size:0.9rem">
+                <li>往高处转移，不要涉水</li>
+                <li>被困时爬上屋顶或大树</li>
+                <li>用手机拨打求救电话</li>
+                <li>保存体力等待救援</li>
+              </ul>
+            </div>
+            <div class="guide-card">
+              <div style="font-weight;600;color:var(--accent-orange)">🌀 台风</div>
+              <ul style="margin-top:8px;margin-left:20px;font-size:0.9rem">
+                <li>关好门窗，加固易损部位</li>
+                <li>储备食物和饮用水</li>
+                <li>避免外出，远离广告牌</li>
+                <li>听从政府疏散指令</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📈 全球自然灾害统计数据</h3>
+          <p class="data-source">数据来源：国际红十字会灾难数据库 2023</p>
+          <div class="chart-container large" id="disasterChart"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>自然灾害 | 数据来源：中国应急管理部、WHO、UNDRR</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'meteorological') initColdWaveChart();
+      if (tabId === 'prevention') initDisasterChart();
+    }
+
+    function triggerEarthquake(magnitude) {
+      const pWave = document.getElementById('pWave');
+      const sWave = document.getElementById('sWave');
+      const info = document.getElementById('earthquakeInfo');
+
+      const configs = {
+        small: { duration: '1.5s', intensity: '小型地震', color: 'var(--accent-green)', desc: '震级 < 5，影响范围较小' },
+        medium: { duration: '2s', intensity: '中型地震', color: 'var(--accent-yellow)', desc: '震级 5-7，有明显震感' },
+        large: { duration: '3s', intensity: '大型地震', color: 'var(--accent-red)', desc: '震级 ≥ 7，破坏性强' }
+      };
+
+      const config = configs[magnitude] || configs.medium;
+
+      pWave.style.display = 'block';
+      sWave.style.display = 'none';
+
+      pWave.style.animation = 'none';
+      sWave.style.animation = 'none';
+      pWave.offsetHeight;
+      sWave.offsetHeight;
+
+      pWave.style.animation = `seismicExpand ${config.duration} ease-out infinite`;
+
+      setTimeout(() => {
+        sWave.style.display = 'block';
+        sWave.style.animation = `seismicExpand ${config.duration * 1.5} ease-out infinite`;
+      }, 500);
+
+      info.innerHTML = `
+        <div style="font-weight:600;color:${config.color}">🌍 ${config.intensity}</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px">${config.desc}</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">📡 P波已到达 → S波正在传播...</div>
+      `;
+    }
+
+    function showTornadoStep(step) {
+      const funnel = document.getElementById('tornadoFunnel');
+      const vortex = document.getElementById('tornadoVortex');
+      const label = document.getElementById('tornadoLabel');
+      const speed = document.getElementById('tornadoSpeed');
+      const debris = document.querySelectorAll('.tornado-debris');
+
+      const steps = [
+        { 
+          name: '1️⃣ 初始条件', 
+          desc: '大气不稳定状态',
+          speed: 0,
+          funnelOpacity: 0.2,
+          vortexOpacity: 0.1,
+          debrisOpacity: 0,
+          animationDuration: '10s'
+        },
+        { 
+          name: '2️⃣ 旋转开始', 
+          desc: '水平风切变形成旋转',
+          speed: 150,
+          funnelOpacity: 0.5,
+          vortexOpacity: 0.4,
+          debrisOpacity: 0.3,
+          animationDuration: '5s'
+        },
+        { 
+          name: '3️⃣ 漏斗形成', 
+          desc: '旋转被拉伸成垂直漏斗',
+          speed: 300,
+          funnelOpacity: 0.8,
+          vortexOpacity: 0.7,
+          debrisOpacity: 0.7,
+          animationDuration: '3s'
+        },
+        { 
+          name: '4️⃣ 完全形成', 
+          desc: '漏斗接地，形成完整龙卷风',
+          speed: 450,
+          funnelOpacity: 1,
+          vortexOpacity: 1,
+          debrisOpacity: 1,
+          animationDuration: '2s'
+        }
+      ];
+
+      const current = steps[step - 1];
+      if (!current) return;
+
+      label.textContent = `🌪️ ${current.name} - ${current.desc}`;
+      speed.textContent = `中心风速：${current.speed} km/h`;
+      
+      funnel.style.opacity = current.funnelOpacity;
+      funnel.style.animationDuration = current.animationDuration;
+      
+      vortex.style.opacity = current.vortexOpacity;
+      
+      debris.forEach((d, i) => {
+        d.style.opacity = current.debrisOpacity;
+        d.style.animationDuration = (4 - current.debrisOpacity * 2) + 's';
+      });
+
+      if (step === 4) {
+        speed.style.color = '#e74c3c';
+      } else {
+        speed.style.color = 'rgba(255,255,255,0.8)';
+      }
+    }
+
+    function startFloodEscape() {
+      document.getElementById('floodEscapeFeedback').textContent = '🚧 逃生路线规划工具开发中，请关注当地应急管理部门发布的逃生路线！';
+      GeoApp.saveProgress('sheet7', { floodPlanning: true });
+    }
+
+    function checkSafe(zone) {
+      const furniture = ['🛋️', '🛏️', '🗄️', '🍳'];
+      const isSafe = furniture.includes(zone.textContent.trim());
+
+      document.querySelectorAll('.room-zone').forEach(z => {
+        if (furniture.includes(z.textContent.trim())) {
+          z.classList.add('safe');
+        }
+        if (['📺', '🪟', '📚'].includes(z.textContent.trim())) {
+          z.classList.add('danger');
+        }
+      });
+
+      if (isSafe) {
+        zone.style.boxShadow = '0 0 20px var(--accent-green)';
+        alert('正确！这个位置相对安全');
+      } else {
+        zone.style.boxShadow = '0 0 20px var(--accent-red)';
+      }
+    }
+
+    function updateVolcano() {
+      const intensity = parseInt(document.getElementById('volcanoIntensity').value);
+
+      let info, color;
+      if (intensity < 3) {
+        info = { title: '🌋 温和喷发', desc: '熔岩流缓慢流出，对周边影响较小', color: 'var(--accent-green)' };
+      } else if (intensity < 6) {
+        info = { title: '🌋 中等强度喷发', desc: '火山灰可达对流层，影响航空交通', color: 'var(--accent-yellow)' };
+      } else if (intensity < 9) {
+        info = { title: '🌋 强烈喷发', desc: '火山灰进入平流层，可能影响全球气候', color: 'var(--accent-orange)' };
+      } else {
+        info = { title: '🌋 超级喷发', desc: '引发火山冬天，全球气温急剧下降', color: 'var(--accent-red)' };
+      }
+
+      document.getElementById('volcanoInfo').innerHTML = `
+        <div style="font-weight:600;color:${info.color}">${info.title}</div>
+        <div style="font-size:0.9rem;margin-top:8px;color:var(--text-secondary)">${info.desc}</div>
+      `;
+    }
+
+    function calculateEscapeTime() {
+      const distance = parseFloat(document.getElementById('volcanoDistance').value) || 10;
+      const type = document.getElementById('eruptionType').value;
+
+      let speed, time;
+      if (type === 'effusive') {
+        speed = 10;
+        time = distance / speed * 60;
+      } else {
+        speed = 50;
+        time = distance / speed * 60;
+      }
+
+      document.querySelector('#escapeTimeResult div:last-child').textContent = Math.round(time) + ' 分钟';
+    }
+
+    let selectedItems = 0;
+    let essentialSelected = 0;
+
+    function toggleItem(card) {
+      card.classList.toggle('selected');
+
+      if (card.classList.contains('selected')) {
+        selectedItems++;
+        if (card.dataset.essential === 'true') essentialSelected++;
+      } else {
+        selectedItems--;
+        if (card.dataset.essential === 'true') essentialSelected--;
+      }
+
+      const total = document.querySelectorAll('.item-card[data-essential="true"]').length;
+      document.getElementById('backpackResult').innerHTML = `
+        <div style="font-weight:600">已选择: ${essentialSelected}/${total} 必要物品</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">${selectedItems < total ? '还需选择更多必要物品！' : '✅ 准备充分！'}</div>
+      `;
+
+      if (essentialSelected === total) {
+        GeoApp.saveProgress('sheet7', { emergencyKit: true });
+      }
+    }
+
+    function initColdWaveChart() {
+      const chartEl = document.getElementById('coldWaveChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['2023年', '2022年', '常年平均'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['1月', '2月', '3月', '11月', '12月'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '影响省数', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [
+          { name: '2023年', type: 'bar', data: [18, 15, 8, 12, 16], itemStyle: { color: '#3498db' } },
+          { name: '2022年', type: 'bar', data: [15, 12, 6, 10, 14], itemStyle: { color: '#9b59b6' } },
+          { name: '常年平均', type: 'line', data: [12, 10, 5, 8, 11], lineStyle: { color: '#27ae60' }, itemStyle: { color: '#27ae60' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initDisasterChart() {
+      const chartEl = document.getElementById('disasterChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['发生次数', '受灾人口(百万)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['洪水', '台风', '地震', '滑坡', '干旱', '野火'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: [
+          { type: 'value', name: '次数', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+          { type: 'value', name: '百万人口', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } }
+        ],
+        series: [
+          { name: '发生次数', type: 'bar', data: [150, 80, 50, 60, 30, 70], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#e74c3c' }, { offset: 1, color: '#c0392b' }]) } },
+          { name: '受灾人口(百万)', type: 'line', yAxisIndex: 1, data: [200, 80, 30, 40, 150, 20], lineStyle: { color: '#f39c12' }, itemStyle: { color: '#f39c12' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    let typhoonPhase = 0;
+    let typhoonAnimationId;
+
+    const typhoonPhases = [
+      { 
+        name: '🌱 热带扰动', 
+        title: '阶段1: 热带扰动', 
+        desc: '在热带海洋上，海水温度超过26°C时，暖湿空气开始上升，形成低压区域。这是台风形成的初始阶段，风速较弱。',
+        wind: 10,
+        eyeSize: 30,
+        color: '#27ae60'
+      },
+      { 
+        name: '🌪️ 热带低压', 
+        title: '阶段2: 热带低压', 
+        desc: '中心气压持续下降，风速增强至17m/s以下。开始形成明显的螺旋云带，但结构松散。',
+        wind: 15,
+        eyeSize: 40,
+        color: '#3498db'
+      },
+      { 
+        name: '🌀 热带风暴', 
+        title: '阶段3: 热带风暴', 
+        desc: '风速达到17-33m/s，获得正式命名。螺旋结构更加清晰，开始形成风眼雏形。',
+        wind: 25,
+        eyeSize: 50,
+        color: '#f39c12'
+      },
+      { 
+        name: '👑 强热带风暴', 
+        title: '阶段4: 强热带风暴', 
+        desc: '风速增强至33-42m/s，风眼逐渐清晰。外围云系扩大，影响范围增加。',
+        wind: 38,
+        eyeSize: 60,
+        color: '#e67e22'
+      },
+      { 
+        name: '🌊 台风', 
+        title: '阶段5: 台风', 
+        desc: '风速超过42m/s，风眼清晰可见。这是台风的成熟阶段，破坏力最强。',
+        wind: 50,
+        eyeSize: 70,
+        color: '#e74c3c'
+      },
+      { 
+        name: '☁️ 减弱消散', 
+        title: '阶段6: 减弱消散', 
+        desc: '台风登陆后或移入高纬度海域，失去暖湿水汽供应，风速逐渐减弱，最终消散为低压区。',
+        wind: 20,
+        eyeSize: 40,
+        color: '#95a5a6'
+      }
+    ];
+
+    function playTyphoonAnimation() {
+      if (typhoonAnimationId) return;
+      
+      typhoonPhase = 0;
+      updateTyphoonDisplay();
+      
+      typhoonAnimationId = setInterval(() => {
+        typhoonPhase++;
+        if (typhoonPhase >= typhoonPhases.length) {
+          clearInterval(typhoonAnimationId);
+          typhoonAnimationId = null;
+        } else {
+          updateTyphoonDisplay();
+        }
+      }, 4000);
+    }
+
+    function updateTyphoonDisplay() {
+      const phase = typhoonPhases[typhoonPhase];
+      
+      document.getElementById('typhoonPhase').textContent = phase.title;
+      document.getElementById('typhoonWindSpeed').textContent = '风速: ' + phase.wind + ' m/s';
+      
+      document.getElementById('typhoonDescription').innerHTML = `
+        <p><strong>${phase.name}</strong></p>
+        <p style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">${phase.desc}</p>
+      `;
+
+      const eye = document.getElementById('typhoonEye');
+      eye.style.width = phase.eyeSize + 'px';
+      eye.style.height = phase.eyeSize + 'px';
+      eye.style.boxShadow = `0 0 ${phase.eyeSize * 1.2}px ${phase.color}, 0 0 ${phase.eyeSize * 2}px ${phase.color}40`;
+
+      document.querySelectorAll('.phase-card').forEach((card, i) => {
+        if (i === typhoonPhase) {
+          card.style.background = 'rgba(255,255,255,0.15)';
+          card.style.border = `2px solid ${phase.color}`;
+        } else if (i < typhoonPhase) {
+          card.style.background = 'rgba(46, 204, 113, 0.2)';
+          card.style.border = '1px solid rgba(46, 204, 113, 0.3)';
+        } else {
+          card.style.background = 'rgba(255,255,255,0.05)';
+          card.style.border = '1px solid transparent';
+        }
+      });
+    }
+
+    function resetTyphoonAnimation() {
+      if (typhoonAnimationId) {
+        clearInterval(typhoonAnimationId);
+        typhoonAnimationId = null;
+      }
+      
+      typhoonPhase = 0;
+      document.getElementById('typhoonPhase').textContent = '🌀 阶段1: 热带扰动';
+      document.getElementById('typhoonWindSpeed').textContent = '风速: -- m/s';
+      document.getElementById('typhoonDescription').innerHTML = '<p><strong>当前阶段：</strong>等待动画开始...</p>';
+      
+      const eye = document.getElementById('typhoonEye');
+      eye.style.width = '50px';
+      eye.style.height = '50px';
+      eye.style.boxShadow = '0 0 60px rgba(231, 76, 60, 0.7), 0 0 100px rgba(241, 196, 15, 0.3)';
+
+      document.querySelectorAll('.phase-card').forEach(card => {
+        card.style.background = 'rgba(255,255,255,0.05)';
+        card.style.border = '1px solid transparent';
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initColdWaveChart();
+    });
+  </script>
+</body>
+</html>

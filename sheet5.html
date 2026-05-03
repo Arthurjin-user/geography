@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水循环与海洋 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .water-cycle-diagram {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 40%, #27ae60 40%, #27ae60 45%, #8b7355 45%, #8b7355 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .water-drop {
+      position: absolute;
+      width: 20px;
+      height: 25px;
+      background: radial-gradient(ellipse at 30% 30%, #74b9ff, #0984e3);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      animation: dropFall 3s ease-in infinite;
+      opacity: 0;
+    }
+
+    @keyframes dropFall {
+      0% { transform: translateY(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(200px); opacity: 0; }
+    }
+
+    .evaporation-arrow {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: evaporate 2s ease-out infinite;
+      opacity: 0;
+    }
+
+    @keyframes evaporate {
+      0% { transform: translateY(0); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateY(-100px); opacity: 0; }
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: 3rem;
+      animation: cloudFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes cloudFloat {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(20px); }
+    }
+
+    .water-path {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .path-evaporation { top: 35%; left: 20%; }
+    .path-transport { top: 20%; left: 40%; }
+    .path-precipitation { top: 25%; right: 20%; }
+    .path-runoff { bottom: 15%; right: 20%; }
+    .path-infiltration { bottom: 30%; left: 50%; }
+
+    .ocean-map {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(135deg, #006994, #004466);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ocean-region {
+      position: absolute;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      background: rgba(0, 105, 148, 0.8);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .ocean-region:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+      z-index: 10;
+    }
+
+    .current-arrow {
+      position: absolute;
+      font-size: 1.2rem;
+      color: #00d4ff;
+      animation: currentFlow 3s ease-in-out infinite;
+    }
+
+    @keyframes currentFlow {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      50% { transform: translateX(30px) rotate(10deg); }
+    }
+
+    .depth-pressure {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(to bottom, #3498db, #1a5276, #0d1f33);
+      border-radius: 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .foam-block {
+      width: 60px;
+      height: 40px;
+      background: #ecf0f1;
+      border-radius: 4px;
+      transition: all 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #333;
+    }
+
+    .tide-demo {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-end;
+      padding: 20px;
+    }
+
+    .tide-container {
+      width: 150px;
+      height: 200px;
+      background: linear-gradient(to bottom, #87ceeb, #004466);
+      border-radius: 12px 12px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .water-level {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(52, 152, 219, 0.6);
+      transition: height 0.5s ease;
+    }
+
+    .tide-label {
+      text-align: center;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    .surf-board {
+      width: 30px;
+      height: 80px;
+      background: linear-gradient(135deg, #fff, #3498db);
+      border-radius: 8px;
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-15deg);
+      transition: all 0.3s ease;
+    }
+
+    .el-nino-map {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #1a3a5c, #004466);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .el-nino-zone {
+      position: absolute;
+      background: radial-gradient(ellipse, rgba(231, 76, 60, 0.6), transparent);
+      border-radius: 50%;
+      animation: elninoPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes elninoPulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .plastic-tracker {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(to bottom, #87ceeb, #006994);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .plastic-bottle {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: bottleFloat 8s linear infinite;
+    }
+
+    @keyframes bottleFloat {
+      0% { left: 10%; top: 50%; transform: rotate(0deg); }
+      25% { left: 40%; top: 40%; transform: rotate(20deg); }
+      50% { left: 70%; top: 60%; transform: rotate(-10deg); }
+      75% { left: 85%; top: 30%; transform: rotate(15deg); }
+      100% { left: 95%; top: 70%; transform: rotate(0deg); }
+    }
+
+    .salinity-taste {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .taste-btn {
+      padding: 16px 24px;
+      background: rgba(0, 105, 148, 0.5);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .taste-btn:hover {
+      background: rgba(0, 212, 255, 0.3);
+      border-color: var(--accent-cyan);
+      transform: translateY(-4px);
+    }
+
+    .tide-generator {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .tide-input {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tide-input label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .tide-input input {
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body data-theme="water">
+  <nav class="nav-bar" style="background:rgba(0,68,102,0.95)">
+    <div class="nav-brand">💧 水循环与海洋</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link active">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('cycle')">水循环</button>
+        <button class="tab" onclick="switchTab('seawater')">海水性质</button>
+        <button class="tab" onclick="switchTab('movement')">海水运动</button>
+      </div>
+
+      <div id="cycle" class="tab-content active">
+        <div class="card">
+          <h3>🔄 完整水循环动画</h3>
+          <div class="water-cycle-diagram" id="waterCycleDiagram">
+            <div class="cloud" style="top:10%;left:30%">☁️</div>
+            <div class="cloud" style="top:5%;right:25%">☁️</div>
+            <div class="cloud" style="top:15%;left:55%">☁️☁️</div>
+
+            <div class="water-path path-evaporation">
+              <span>🌊</span>
+              <span>蒸发</span>
+            </div>
+            <div class="water-path path-transport">
+              <span>💨</span>
+              <span>水汽输送</span>
+            </div>
+            <div class="water-path path-precipitation">
+              <span>🌧️</span>
+              <span>降水</span>
+            </div>
+            <div class="water-path path-runoff">
+              <span>🏞️</span>
+              <span>地表径流</span>
+            </div>
+            <div class="water-path path-infiltration">
+              <span>🌱</span>
+              <span>下渗/地下径流</span>
+            </div>
+
+            <div class="water-drop" style="left:25%;animation-delay:0s"></div>
+            <div class="water-drop" style="left:35%;animation-delay:0.5s"></div>
+            <div class="water-drop" style="left:60%;animation-delay:1s"></div>
+            <div class="water-drop" style="left:75%;animation-delay:1.5s"></div>
+          </div>
+          <div class="grid-3" style="margin-top:20px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-cyan)">🌊 蒸发</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">太阳辐射使地表水蒸发<br>进入大气</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-cyan)">💨 输送</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">水汽随风远距离移动<br>形成云</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:var(--accent-cyan)">🌧️ 降水</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">水汽凝结形成降水<br>雨、雪、雹</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>💧 水滴的一生</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">跟随一个水分子，体验它在海洋、大气、陆地之间的循环旅程</p>
+          <div style="display:flex;justify-content:center;padding:20px">
+            <button class="btn" onclick="startWaterJourney()">🚀 开始旅程</button>
+          </div>
+          <div id="waterJourney" style="margin-top:16px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <p style="color:var(--text-secondary)">点击按钮，跟随一滴水穿越海洋、大气和陆地</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌍 全球降水分布</h3>
+          <p class="data-source">数据来源：全球降水气候学项目(GPCP)</p>
+          <div style="background:linear-gradient(180deg,#0a0a1a 0%,#1a365d 50%,#0d1b2a 100%);border-radius:12px;padding:24px;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-around;height:200px;margin-bottom:20px;">
+              <div style="display:flex;flex-direction:column;align-items:center;width:18%">
+                <div style="background:linear-gradient(180deg,#27ae60 0%,#1e8449 100%);width:60%;height:80%;border-radius:8px 8px 0 0;transition:height 0.5s"></div>
+                <div style="font-size:0.85rem;color:#b0b0d0;margin-top:8px">赤道地区</div>
+                <div style="font-size:0.75rem;color:#666">2000-3000mm/年</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;width:18%">
+                <div style="background:linear-gradient(180deg,#f39c12 0%,#d68910 100%);width:60%;height:25%;border-radius:8px 8px 0 0;transition:height 0.5s"></div>
+                <div style="font-size:0.85rem;color:#b0b0d0;margin-top:8px">副热带</div>
+                <div style="font-size:0.75rem;color:#666">200-500mm/年</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;width:18%">
+                <div style="background:linear-gradient(180deg,#3498db 0%,#2980b9 100%);width:60%;height:55%;border-radius:8px 8px 0 0;transition:height 0.5s"></div>
+                <div style="font-size:0.85rem;color:#b0b0d0;margin-top:8px">中纬度</div>
+                <div style="font-size:0.75rem;color:#666">500-1500mm/年</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;width:18%">
+                <div style="background:linear-gradient(180deg,#9b59b6 0%,#8e44ad 100%);width:60%;height:15%;border-radius:8px 8px 0 0;transition:height 0.5s"></div>
+                <div style="font-size:0.85rem;color:#b0b0d0;margin-top:8px">高纬度</div>
+                <div style="font-size:0.75rem;color:#666">200-500mm/年</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;width:18%">
+                <div style="background:linear-gradient(180deg,#ecf0f1 0%,#bdc3c7 100%);width:60%;height:8%;border-radius:8px 8px 0 0;transition:height 0.5s"></div>
+                <div style="font-size:0.85rem;color:#b0b0d0;margin-top:8px">极地</div>
+                <div style="font-size:0.75rem;color:#666">&lt;200mm/年</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#b0b0d0;padding:0 10%">
+              <span>🌧️ 多雨带</span>
+              <span>🏜️ 少雨带</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>👷 人类活动对水循环的影响</h3>
+          <div class="grid-3" style="margin-top:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;cursor:pointer" onclick="showHumanImpact('dam')">
+              <div style="font-size:2rem;margin-bottom:12px">🏗️</div>
+              <div style="font-weight:600">修建水库</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">调节径流时间分配<br>减少下游流量</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;cursor:pointer" onclick="showHumanImpact('deforest')">
+              <div style="font-size:2rem;margin-bottom:12px">🪓</div>
+              <div style="font-weight:600">砍伐森林</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">减少蒸散发<br>增加地表径流</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;cursor:pointer" onclick="showHumanImpact('urban')">
+              <div style="font-size:2rem;margin-bottom:12px">🏙️</div>
+              <div style="font-weight:600">城市建设</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">增加不透水面积<br>加速地表径流</div>
+            </div>
+          </div>
+          <div id="impactDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击上方选项了解详细信息</strong>
+          </div>
+        </div>
+
+        
+      </div>
+
+      <div id="seawater" class="tab-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🌡️ 海水温度分布</h3>
+            <p class="data-source">数据来源：NOAA海洋表面温度分析</p>
+            <div class="chart-container" id="tempChart"></div>
+          </div>
+          <div class="card">
+            <h3>🧂 海水盐度分布</h3>
+            <p class="data-source">数据来源：世界海洋盐度数据库</p>
+            <div class="chart-container" id="salinityChart"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>👅 海水盐度味觉模拟</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击不同海域，了解该海域海水的咸度描述</p>
+          <div class="salinity-taste">
+            <div class="taste-btn" onclick="showTaste('baltic', '波罗的海', '较淡 - 盐度约15‰', '附近河流淡水注入多')">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌊</div>
+              <div style="font-weight:600">波罗的海</div>
+              <div style="font-size:0.8rem;opacity:0.8">约15‰</div>
+            </div>
+            <div class="taste-btn" onclick="showTaste('north', '北大西洋', '适中 - 盐度约35‰', '正常海水盐度')">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌊</div>
+              <div style="font-weight:600">北大西洋</div>
+              <div style="font-size:0.8rem;opacity:0.8">约35‰</div>
+            </div>
+            <div class="taste-btn" onclick="showTaste('red', '红海', '很咸 - 盐度约40‰', '蒸发强烈，盐度高')">
+              <div style="font-size:1.5rem;margin-bottom:8px">🌊</div>
+              <div style="font-weight:600">红海</div>
+              <div style="font-size:0.8rem;opacity:0.8">约40‰</div>
+            </div>
+            <div class="taste-btn" onclick="showTaste('dead', '死海', '极咸 - 盐度约340‰', '不能游泳，只能漂浮')">
+              <div style="font-size:1.5rem;margin-bottom:8px">🧂</div>
+              <div style="font-weight:600">死海</div>
+              <div style="font-size:0.8rem;opacity:0.8">约340‰</div>
+            </div>
+          </div>
+          <div id="tasteResult" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <strong>点击上方海域品尝海水</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🔘 深海压力体验</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">拖动滑块到不同深度，观察压力变化和泡沫塑料块被压缩的效果</p>
+          <div style="background:linear-gradient(180deg,#0a1628 0%,#0d2847 50%,#06182d 100%);border-radius:12px;padding:24px;height:220px;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:100%;background-image:repeating-linear-gradient(0deg,transparent,transparent 20px,rgba(0,150,255,0.03) 20px,rgba(0,150,255,0.03) 21px);">
+            </div>
+            <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;">
+              <div id="foamBlock" style="width:120px;height:100px;background:linear-gradient(145deg,#f0f0f0 0%,#d0d0d0 50%,#b8b8b8 100%);border-radius:12px;box-shadow:inset 0 -5px 15px rgba(0,0,0,0.2), inset 0 5px 15px rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#666;font-weight:600;transition:all 0.5s ease;border:2px solid #ccc;">
+                🧽<br/>泡沫塑料块
+              </div>
+              <div style="font-size:0.75rem;color:#888;margin-top:8px" id="depthIndicator">海面 (0m)</div>
+            </div>
+            <div style="position:absolute;top:10px;right:10px;color:#00d4ff;font-size:0.85rem" id="pressureDisplay">压力: 1 atm</div>
+            <div style="position:absolute;bottom:10px;right:10px;color:#666;font-size:0.75rem">🌊 海洋深度示意</div>
+          </div>
+          <div class="slider-container" style="margin-top:16px">
+            <span>深度</span>
+            <input type="range" class="slider" min="0" max="11000" value="0" id="depthSlider" oninput="updateDepthPressure()">
+            <span id="depthValue">0 m</span>
+          </div>
+          <div id="pressureResult" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center">
+              <div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">深度</div>
+                <div style="font-size:1.2rem;font-weight:600" id="resultDepth">0 m</div>
+              </div>
+              <div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">压力</div>
+                <div style="font-size:1.2rem;font-weight:600" id="resultPressure">1 atm</div>
+              </div>
+              <div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">状态</div>
+                <div style="font-size:1.2rem;font-weight:600" id="resultStatus">正常</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🏖️ 死海漂浮体验</h3>
+          <div style="display:flex;gap:40px;justify-content:center;padding:20px">
+            <div style="text-align:center">
+              <div style="font-size:3rem;margin-bottom:12px">🧂</div>
+              <div style="font-weight:600">普通海水</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">盐度约35‰<br>人可以游泳</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:3rem;margin-bottom:12px">🛁</div>
+              <div style="font-weight:600">死海</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">盐度约340‰<br>人可以轻松漂浮</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;margin-top:16px">
+            <p><strong>原理：</strong>死海盐度极高，湖水密度远大于人体密度，因此人可以轻松漂浮在水面上。这也是为什么死海周围寸草不生——过高的盐度使生物难以生存。</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="movement" class="tab-content">
+        <div class="card">
+          <h3>🌊 世界洋流分布</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击任意洋流，查看该洋流的详细信息</p>
+          <div class="ocean-map" id="oceanMap">
+            <div class="ocean-region" style="width:20%;height:15%;top:25%;left:15%" onclick="showCurrent('gulfstream', '墨西哥湾暖流', '北大西洋', '从墨西哥湾流向欧洲西海岸，调节气温', '暖流')">墨西哥湾暖流</div>
+            <div class="ocean-region" style="width:15%;height:20%;top:30%;left:60%" onclick="showCurrent('kuroshio', '黑潮', '北太平洋', '日本东海岸的强大暖流', '暖流')">黑潮</div>
+            <div class="ocean-region" style="width:18%;height:12%;top:55%;left:25%" onclick="showCurrent('humbolt', '秘鲁寒流', '南太平洋', '导致智利沿海形成沙漠气候', '寒流')">秘鲁寒流</div>
+            <div class="ocean-region" style="width:20%;height:10%;top:40%;left:40%" onclick="showCurrent('california', '加利福尼亚寒流', '北太平洋', '美国西海岸的上升流', '寒流')">加利福尼亚寒流</div>
+          </div>
+          <div id="currentDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击地图上的洋流名称查看详细信息</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌙 潮汐形成原理</h3>
+          <div class="tide-demo">
+            <div style="text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🌍</div>
+              <div style="font-size:0.9rem">地球</div>
+            </div>
+            <div style="text-align:center">
+              <div class="tide-container">
+                <div class="water-level" id="tide1" style="height:30%"></div>
+                <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:1.5rem">🌙</div>
+              </div>
+              <div class="tide-label">涨潮</div>
+            </div>
+            <div style="text-align:center">
+              <div class="tide-container">
+                <div class="water-level" id="tide2" style="height:10%"></div>
+              </div>
+              <div class="tide-label">退潮</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;margin-top:20px">
+            <p><strong>原理：</strong>月球对地球的引力导致海洋表面出现潮汐。面向月球的一侧和背向月球的一侧都会形成涨潮，而垂直于月球方向的位置则是退潮。</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>⚡ 潮汐发电站设计</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">设计一个潮汐发电站，计算发电量</p>
+          <div class="tide-generator">
+            <div class="tide-input">
+              <label>潮差 (m)</label>
+              <input type="number" id="tidalRange" value="5">
+            </div>
+            <div class="tide-input">
+              <label>水库面积 (km²)</label>
+              <input type="number" id="reservoirArea" value="20">
+            </div>
+            <div class="tide-input">
+              <label>发电效率 (%)</label>
+              <input type="number" id="efficiency" value="30">
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:16px">
+            <button class="btn" onclick="calculateTidalPower()">计算发电量</button>
+          </div>
+          <div id="tidalResult" style="margin-top:16px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-size:0.9rem;color:var(--text-secondary)">预计年发电量</div>
+            <div style="font-size:2rem;font-weight:700;color:var(--accent-cyan)">-- MWh</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌡️ 厄尔尼诺现象全球影响</h3>
+          <p class="data-source">数据来源：NOAA厄尔尼诺监测系统</p>
+          <div class="chart-container large" id="elninoChart"></div>
+          <div class="grid-2" style="margin-top:20px">
+            <div style="background:rgba(231,76,60,0.1);padding:16px;border-radius:12px">
+              <div style="font-weight:600;color:#e74c3c">🔴 正常情况</div>
+              <ul style="margin-top:8px;font-size:0.85rem;color:var(--text-secondary);margin-left:20px">
+                <li>西太平洋海水温暖</li>
+                <li>亚洲季风正常</li>
+                <li>美洲西海岸干燥</li>
+              </ul>
+            </div>
+            <div style="background:rgba(52,152,219,0.1);padding:16px;border-radius:12px">
+              <div style="font-weight;600;color:#3498db">🔵 厄尔尼诺年</div>
+              <ul style="margin-top:8px;font-size:0.85rem;color:var(--text-secondary);margin-left:20px">
+                <li>东太平洋海水变暖</li>
+                <li>亚洲季风减弱</li>
+                <li>美洲西海岸暴雨</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🍶 海洋垃圾追踪器</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">模拟一个塑料瓶如何在洋流中漂流，最终到达哪里</p>
+          <div class="plastic-tracker">
+            <div class="plastic-bottle">🍶</div>
+            <div style="position:absolute;top:20px;left:20px;font-size:0.8rem;color:white">
+              <div>起始位置：太平洋</div>
+              <div>漂流方向：加利福尼亚洋流</div>
+            </div>
+            <div style="position:absolute;bottom:20px;right:20px;font-size:0.8rem;color:white">
+              <div>当前位置：北太平洋亚热带环流</div>
+              <div>预计到达：太平洋垃圾带</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;margin-top:16px">
+            <p><strong>海洋垃圾问题：</strong>每年约800万吨塑料流入海洋。北太平洋亚热带环流形成了"太平洋垃圾带"，面积约160万平方公里，相当于三个法国大小。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>水循环与海洋 | 数据来源：NOAA、FAO、WHOI</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'cycle') initPrecipitationChart();
+      if (tabId === 'seawater') initSeawaterCharts();
+      if (tabId === 'movement') initElninoChart();
+    }
+
+    function startWaterJourney() {
+      const stages = [
+        { text: '💧 一滴水分子诞生在太平洋的温暖海面上', duration: 1500 },
+        { text: '☀️ 太阳辐射带来热量，水分子开始获得能量', duration: 1500 },
+        { text: '🌬️ 水分子挣脱水面束缚，蒸发进入大气层', duration: 1500 },
+        { text: '☁️ 在高空遇冷凝结成微小水滴，形成云层', duration: 1500 },
+        { text: '💨 风带着云朵飘向大陆上空', duration: 1500 },
+        { text: '🌧️ 云中水滴越聚越大，形成降雨落下', duration: 1500 },
+        { text: '🏔️ 雨水落在高山上，一部分渗入地下', duration: 1500 },
+        { text: '🏞️ 另一部分形成地表径流，汇入河流', duration: 1500 },
+        { text: '🌊 河流穿越平原，最终汇入大海', duration: 1500 },
+        { text: '🔄 完成一次完整的水循环！', duration: 2000 }
+      ];
+
+      let i = 0;
+      const journeyEl = document.getElementById('waterJourney');
+      
+      const runStage = () => {
+        if (i < stages.length) {
+          journeyEl.innerHTML = `<p style="color:var(--accent-cyan);font-size:1.1rem">${stages[i].text}</p>`;
+          setTimeout(runStage, stages[i].duration);
+          i++;
+        } else {
+          journeyEl.innerHTML = '<p style="color:var(--accent-green);font-size:1.2rem">🎉 恭喜！完成了一次完整的水循环之旅！</p>';
+          GeoApp.saveProgress('sheet5', { waterJourney: true });
+        }
+      };
+      
+      runStage();
+    }
+
+    function showHumanImpact(type) {
+      const impacts = {
+        dam: { title: '🏗️ 修建水库', effects: ['调节河流径流的季节分配', '减少下游洪水风险', '增加库区蒸发损失', '可能引发地震'], desc: '水库像一个大水杯，调节水的流动时间，但也会增加局部蒸发。' },
+        deforest: { title: '🪓 砍伐森林', effects: ['减少植被蒸散发', '增加地表径流', '减少地下水补给', '加剧水土流失'], desc: '森林像一块海绵，吸收雨水并慢慢释放。砍伐后，水直接流走。' },
+        urban: { title: '🏙️ 城市建设', effects: ['增加不透水地面比例', '加速雨水汇流', '减少地下水下渗', '增加城市内涝风险'], desc: '水泥和沥青不让水渗下去，所以城市容易积水。' }
+      };
+      const data = impacts[type];
+      if (!data) return;
+
+      document.getElementById('impactDetail').innerHTML = `
+        <h4 style="color:var(--accent-cyan);margin-bottom:12px">${data.title}</h4>
+        <p style="margin-bottom:12px">${data.desc}</p>
+        <ul style="margin-left:20px;font-size:0.9rem">
+          ${data.effects.map(e => `<li>${e}</li>`).join('')}
+        </ul>
+      `;
+    }
+
+    function calculateRainwater() {
+      const roof = parseFloat(document.getElementById('roofArea').value) || 100;
+      const rain = parseFloat(document.getElementById('rainfall').value) || 1000;
+      const collection = roof * rain * 0.8;
+      document.querySelector('#rainwaterResult div:last-child').textContent = collection.toLocaleString() + ' L';
+    }
+
+    function resetRainwater() {
+      document.getElementById('roofArea').value = 100;
+      document.getElementById('rainfall').value = 1000;
+      document.querySelector('#rainwaterResult div:last-child').textContent = '-- L';
+    }
+
+    function showTaste(region, name, salinity, desc) {
+      document.getElementById('tasteResult').innerHTML = `
+        <div style="font-size:1.2rem;font-weight:600;color:var(--accent-cyan)">${name}</div>
+        <div style="margin-top:8px"><strong>盐度：</strong>${salinity}</div>
+        <div style="margin-top:4px;font-size:0.9rem">${desc}</div>
+      `;
+    }
+
+    function updateDepthPressure() {
+      const depth = parseInt(document.getElementById('depthSlider').value);
+      document.getElementById('depthValue').textContent = depth.toLocaleString() + ' m';
+
+      const pressure = 1 + depth / 10;
+      const compressionRatio = Math.min(0.7, depth / 15000);
+      const foam = document.getElementById('foamBlock');
+
+      const originalWidth = 120;
+      const originalHeight = 100;
+      const newWidth = originalWidth * (1 - compressionRatio * 0.6);
+      const newHeight = originalHeight * (1 - compressionRatio * 0.8);
+
+      foam.style.height = newHeight + 'px';
+      foam.style.width = newWidth + 'px';
+      foam.style.opacity = Math.max(0.4, 1 - compressionRatio * 1.2);
+      foam.style.transform = `translateX(-50%) scale(${1 - compressionRatio * 0.3})`;
+      foam.style.borderColor = depth > 5000 ? '#888' : '#ccc';
+
+      let status = '正常';
+      let statusColor = 'var(--accent-green)';
+      if (depth > 200) { status = '开始压缩'; statusColor = 'var(--accent-yellow)'; }
+      if (depth > 1000) { status = '明显变形'; statusColor = 'var(--accent-orange)'; }
+      if (depth > 5000) { status = '严重变形'; statusColor = 'var(--accent-red)'; }
+      if (depth > 8000) { status = '接近极限'; statusColor = '#c0392b'; }
+
+      let depthLabel = '海面';
+      if (depth > 0 && depth <= 200) depthLabel = '浅海';
+      else if (depth <= 1000) depthLabel = '中层海洋';
+      else if (depth <= 4000) depthLabel = '深层海洋';
+      else if (depth <= 6000) depthLabel = '深渊';
+      else depthLabel = '超深渊';
+
+      document.getElementById('depthIndicator').textContent = depthLabel + ' (' + depth.toLocaleString() + 'm)';
+      document.getElementById('pressureDisplay').textContent = '压力: ' + pressure.toFixed(0) + ' atm';
+      document.getElementById('resultDepth').textContent = depth.toLocaleString() + ' m';
+      document.getElementById('resultPressure').textContent = pressure.toFixed(0) + ' atm';
+      document.getElementById('resultStatus').textContent = status;
+      document.getElementById('resultStatus').style.color = statusColor;
+    }
+
+    function showCurrent(id, name, location, effect, type) {
+      document.getElementById('currentDetail').innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="font-size:1.5rem">${type === '暖流' ? '🔴' : '🔵'}</span>
+          <div>
+            <div style="font-weight:600">${name}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">${location}</div>
+          </div>
+        </div>
+        <div style="font-size:0.9rem"><strong>影响：</strong>${effect}</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">类型：${type}</div>
+      `;
+      GeoApp.saveProgress('sheet5', { currentViewed: id });
+    }
+
+    function calculateTidalPower() {
+      const range = parseFloat(document.getElementById('tidalRange').value) || 5;
+      const area = parseFloat(document.getElementById('reservoirArea').value) || 20;
+      const eff = parseFloat(document.getElementById('efficiency').value) || 30;
+
+      const density = 1025;
+      const g = 9.8;
+      const power = density * g * range * area * 2 * eff / 100;
+      const annualEnergy = power * 24 * 365 / 1000;
+
+      document.querySelector('#tidalResult div:last-child').textContent = annualEnergy.toFixed(0) + ' MWh';
+    }
+
+    function initPrecipitationChart() {
+      const chartEl = document.getElementById('precipitationChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['赤道', '北纬30°', '北纬60°', '南极'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['1月', '4月', '7月', '10月'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: 'mm/月', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [
+          { name: '赤道', type: 'bar', data: [120, 140, 100, 130], itemStyle: { color: '#3498db' } },
+          { name: '北纬30°', type: 'bar', data: [30, 50, 80, 40], itemStyle: { color: '#f39c12' } },
+          { name: '北纬60°', type: 'bar', data: [60, 50, 70, 80], itemStyle: { color: '#27ae60' } },
+          { name: '南极', type: 'bar', data: [5, 3, 8, 4], itemStyle: { color: '#9b59b6' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initSeawaterCharts() {
+      const tempChart = echarts.init(document.getElementById('tempChart'));
+      const salinityChart = echarts.init(document.getElementById('salinityChart'));
+
+      tempChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['赤道', '北纬20°', '北纬40°', '北纬60°', '北极'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '°C', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'line', smooth: true,
+          data: [28, 26, 20, 8, 2],
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(231,76,60,0.5)' }, { offset: 1, color: 'rgba(231,76,60,0)' }]) },
+          lineStyle: { color: '#e74c3c' }, itemStyle: { color: '#e74c3c' }
+        }]
+      });
+
+      salinityChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['赤道', '北纬20°', '北纬40°', '北纬60°', '北极'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '‰', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'line', smooth: true,
+          data: [34, 36, 35, 33, 30],
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0,180,216,0.5)' }, { offset: 1, color: 'rgba(0,180,216,0)' }]) },
+          lineStyle: { color: '#00b4d8' }, itemStyle: { color: '#00b4d8' }
+        }]
+      });
+
+      window.addEventListener('resize', () => { tempChart.resize(); salinityChart.resize(); });
+    }
+
+    function initElninoChart() {
+      const chartEl = document.getElementById('elninoChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['厄尔尼诺', '正常', '拉尼娜'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '海温异常°C', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [
+          { name: '厄尔尼诺', type: 'line', data: [2.3, 2.5, 0.5, -0.5, -0.8, -0.6, -0.9, -0.6, 1.5], lineStyle: { color: '#e74c3c' }, itemStyle: { color: '#e74c3c' } },
+          { name: '正常', type: 'line', data: [0, 0, 0, 0, 0, 0, 0, 0, 0], lineStyle: { color: '#27ae60', type: 'dashed' }, itemStyle: { color: '#27ae60' } },
+          { name: '拉尼娜', type: 'line', data: [-1.2, -0.8, -1.5, -2.0, -1.8, -1.7, -1.5, -1.2, -0.5], lineStyle: { color: '#3498db' }, itemStyle: { color: '#3498db' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateSurf();
+      initPrecipitationChart();
+    });
+  </script>
+</body>
+</html>
