@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大气系统 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .atmosphere-profile {
+      width: 100%;
+      height: 450px;
+      position: relative;
+      background: linear-gradient(to top,
+        #3d2817 0%,
+        #5a3d2b 5%,
+        #4a90e2 12%,
+        #3498db 25%,
+        #87ceeb 50%,
+        #5dade2 70%,
+        #aed6f1 80%,
+        #d5dbdb 90%,
+        #e8e8e8 100%
+      );
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .atmosphere-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .atmosphere-layer:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(255,255,255,0.3);
+    }
+
+    .layer-troposphere { top: 65%; height: 12%; background: rgba(76, 175, 80, 0.6); }
+    .layer-stratosphere { top: 40%; height: 25%; background: rgba(52, 152, 219, 0.6); }
+    .layer-mesosphere { top: 15%; height: 25%; background: rgba(155, 89, 182, 0.6); }
+    .layer-thermosphere { top: 2%; height: 13%; background: rgba(231, 76, 60, 0.6); }
+    .layer-exosphere { top: 0%; height: 2%; background: rgba(149, 165, 166, 0.6); }
+
+    .height-scale {
+      position: absolute;
+      right: 20px;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .radiation-demo {
+      position: relative;
+      height: 300px;
+      background: linear-gradient(to top, #f4d03f, #87ceeb);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .sun-ray {
+      position: absolute;
+      width: 4px;
+      background: linear-gradient(to bottom, #fff700, #ff8c00);
+      border-radius: 2px;
+      animation: rayMove 2s ease-in-out infinite;
+    }
+
+    @keyframes rayMove {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+
+    .earth-surface {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to top, #8b7355, #6b5344);
+    }
+
+    .radiation-arrow {
+      position: absolute;
+      width: 60px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .arrow-solar { background: #ffff00; }
+    .arrow-ground { background: #ff6600; }
+    .arrow-atmosphere { background: #00b4d8; }
+
+    .greenhouse-effect {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .surface-box {
+      width: 120px;
+      height: 80px;
+      background: linear-gradient(135deg, #8b7355, #6b5344);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+
+    .atmosphere-box {
+      width: 140px;
+      height: 100px;
+      background: linear-gradient(135deg, rgba(135, 206, 235, 0.6), rgba(135, 206, 235, 0.3));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+
+    .thermal-diagram {
+      width: 100%;
+      height: 350px;
+      position: relative;
+    }
+
+    .sea-land {
+      position: absolute;
+      bottom: 0;
+      display: flex;
+    }
+
+    .sea {
+      width: 150px;
+      height: 80px;
+      background: linear-gradient(to top, #1a5276, #3498db);
+    }
+
+    .land {
+      width: 150px;
+      height: 80px;
+      background: linear-gradient(to top, #8b7355, #d4a76a);
+    }
+
+    .wind-arrow {
+      position: absolute;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      font-size: 1.2rem;
+      animation: windBlow 2s ease-in-out infinite;
+    }
+
+    @keyframes windBlow {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(10px); }
+    }
+
+    .city-heatmap {
+      width: 100%;
+      height: 300px;
+      background: radial-gradient(ellipse at center, #e74c3c 0%, #f39c12 30%, #27ae60 60%, #3498db 100%);
+      border-radius: 16px;
+      position: relative;
+    }
+
+    .heat-zone {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(231,76,60,0.8), transparent);
+      animation: heatPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes heatPulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .ozone-map {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(180deg, #0a0a2a 0%, #1a3a5c 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ozone-area {
+      position: absolute;
+      background: radial-gradient(ellipse, rgba(128, 0, 128, 0.6), transparent);
+      border-radius: 50%;
+    }
+
+    .balloon-exp {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .balloon {
+      width: 60px;
+      height: 80px;
+      background: radial-gradient(ellipse at 30% 30%, #ff6b6b, #c0392b);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      position: relative;
+      animation: balloonFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes balloonFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .balloon-string {
+      width: 2px;
+      height: 40px;
+      background: #666;
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+    }
+
+    .height-marker {
+      position: absolute;
+      left: 20px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lantern {
+      width: 40px;
+      height: 60px;
+      background: radial-gradient(ellipse, #ff6b35, #d4a76a);
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+      animation: lanternRise 4s ease-in-out infinite;
+    }
+
+    @keyframes lanternRise {
+      0% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-30px) rotate(5deg); }
+      50% { transform: translateY(-60px) rotate(0deg); }
+      75% { transform: translateY(-30px) rotate(-5deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+  </style>
+</head>
+<body data-theme="atmosphere">
+  <nav class="nav-bar" style="background:rgba(135,206,235,0.95)">
+    <div class="nav-brand">🌫️ 大气系统</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link active">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('layers')">大气分层</button>
+        <button class="tab" onclick="switchTab('heating')">大气受热</button>
+        <button class="tab" onclick="switchTab('thermal')">热力环流</button>
+      </div>
+
+      <div id="layers" class="tab-content active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🌬️ 大气垂直分层</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击各层查看详细信息</p>
+            <div class="atmosphere-profile" id="atmosphereProfile">
+              <div class="atmosphere-layer layer-troposphere" onclick="showLayerInfo('troposphere')">
+                <span>对流层 0-12km</span>
+              </div>
+              <div class="atmosphere-layer layer-stratosphere" onclick="showLayerInfo('stratosphere')">
+                <span>平流层 12-50km</span>
+              </div>
+              <div class="atmosphere-layer layer-mesosphere" onclick="showLayerInfo('mesosphere')">
+                <span>中间层 50-80km</span>
+              </div>
+              <div class="atmosphere-layer layer-thermosphere" onclick="showLayerInfo('thermosphere')">
+                <span>热层 80-500km</span>
+              </div>
+              <div class="atmosphere-layer layer-exosphere" onclick="showLayerInfo('exosphere')">
+                <span>散逸层 500km+</span>
+              </div>
+              <div class="height-scale">
+                <span>0km</span>
+                <span>50km</span>
+                <span>100km</span>
+                <span>500km</span>
+                <span>1000km</span>
+              </div>
+            </div>
+            <div id="layerInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <strong>点击上方大气层了解详情</strong>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🎈 大气成分气球实验</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">点击不同气体，观察它们在什么高度分布</p>
+            <div style="display:flex;flex-direction:column;align-items:center;padding:20px">
+              <div class="balloon-exp">
+                <div class="balloon" id="gasBalloon">
+                  <div class="balloon-string"></div>
+                </div>
+                <div id="gasLabel" style="font-weight:600">氮气 N₂</div>
+              </div>
+              <div id="gasInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;min-width:280px">
+                <div><strong>占比：</strong><span style="color:var(--accent-cyan)">78%</span></div>
+                <div><strong>分布高度：</strong>0-100km均匀分布</div>
+                <div><strong>描述：</strong>大气中含量最多的气体，是蛋白质和核酸的重要组成部分</div>
+                <div><strong>用途：</strong>合成氨、食品保鲜、工业保护气</div>
+              </div>
+            </div>
+            <div class="grid-2" style="margin-top:20px">
+              <button class="btn btn-secondary" onclick="showGas('nitrogen')">氮气</button>
+              <button class="btn btn-secondary" onclick="showGas('oxygen')">氧气</button>
+              <button class="btn btn-secondary" onclick="showGas('co2')">二氧化碳</button>
+              <button class="btn btn-secondary" onclick="showGas('ozone')">臭氧</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🧗 飞行员/登山家高度体验</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">输入海拔高度，查看该高度的環境条件</p>
+          <div class="grid-2">
+            <div>
+              <div class="input-group">
+                <label>海拔高度 (m)</label>
+                <input type="number" id="altitudeInput" value="5000" min="0" max="500000" oninput="calculateAltitude()">
+              </div>
+              <div class="slider-container">
+                <input type="range" class="slider" min="0" max="50000" value="5000" id="altitudeSlider" oninput="syncAltitude()">
+              </div>
+            </div>
+            <div id="altitudeResult" style="padding:20px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <div style="margin-bottom:8px"><strong>当前海拔：</strong>5,000 m</div>
+              <div style="margin-bottom:8px"><strong>温度：</strong>-15°C</div>
+              <div style="margin-bottom:8px"><strong>气压：</strong>540 hPa</div>
+              <div style="margin-bottom:8px"><strong>氧气含量：</strong>10.5%</div>
+              <div><strong>环境描述：</strong>高原环境，需适应</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🛩️ 臭氧层空洞变化</h3>
+          <p class="data-source">数据来源：NASA臭氧监测项目</p>
+          <div class="chart-container large" id="ozoneChart"></div>
+        </div>
+      </div>
+
+      <div id="heating" class="tab-content">
+        <div class="card">
+          <h3>☀️ 大气受热过程</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">三种辐射的传递过程</p>
+          <div class="radiation-demo" id="radiationDemo">
+            <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:1.5rem">☀️ 太阳</div>
+            <div id="sunRays"></div>
+            <div class="earth-surface"></div>
+            <div style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);font-size:0.8rem;color:white">地面受热</div>
+          </div>
+          <div class="grid-3" style="margin-top:20px">
+            <div style="background:rgba(255,255,0,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">☀️</div>
+              <div style="font-weight:600;color:#ffff00">太阳辐射</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">短波辐射<br>穿过大气到达地面</div>
+            </div>
+            <div style="background:rgba(255,102,0,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🏜️</div>
+              <div style="font-weight:600;color:#ff6600">地面辐射</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">长波辐射<br>从地面射向大气</div>
+            </div>
+            <div style="background:rgba(0,180,216,0.1);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:8px">🌫️</div>
+              <div style="font-weight:600;color:#00b4d8">大气逆辐射</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">长波辐射<br>从大气返回地面</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌡️ 温室气体调节模拟器</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节温室气体浓度，观察全球温度变化</p>
+          <div class="chart-container" id="greenhouseChart" style="height:250px"></div>
+          <div class="slider-container" style="margin-top:20px">
+            <span>CO₂浓度 (ppm)</span>
+            <input type="range" class="slider" min="280" max="600" value="420" id="co2Slider" oninput="updateGreenhouse()">
+            <span id="co2Value" style="min-width:60px">420 ppm</span>
+          </div>
+          <div class="slider-container">
+            <span>甲烷浓度 (ppb)</span>
+            <input type="range" class="slider" min="700" max="2000" value="1900" id="ch4Slider" oninput="updateGreenhouse()">
+            <span id="ch4Value" style="min-width:60px">1900 ppb</span>
+          </div>
+          <div style="margin-top:20px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-size:0.9rem;color:var(--text-secondary)">预测全球平均温度变化</div>
+            <div style="font-size:3rem;font-weight:700;color:var(--accent-red)" id="tempPrediction">+1.2°C</div>
+          </div>
+          <div id="climateEffects" style="margin-top:16px;padding:16px;background:rgba(231, 76, 60, 0.1);border-radius:12px;border-left:4px solid var(--accent-red);display:flex;flex-wrap:wrap;gap:12px">
+            <div>🌡️ 极端高温事件增加</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🎨 不同颜色地面吸热对比</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击不同颜色的地面，观察吸热能力差异</p>
+          <div class="grid-4" style="margin-top:16px">
+            <div class="surface-box" style="background:linear-gradient(135deg,#000,#333)" onclick="compareSurface('black')">
+              <span>黑色地面</span>
+            </div>
+            <div class="surface-box" style="background:linear-gradient(135deg,#fff,#ccc)" onclick="compareSurface('white')">
+              <span>白色地面</span>
+            </div>
+            <div class="surface-box" style="background:linear-gradient(135deg,#27ae60,#1e8449)" onclick="compareSurface('green')">
+              <span>绿色地面</span>
+            </div>
+            <div class="surface-box" style="background:linear-gradient(135deg,#f1c40f,#d4a76a)" onclick="compareSurface('yellow')">
+              <span>黄色地面</span>
+            </div>
+          </div>
+          <div id="surfaceResult" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <strong>点击上方地面开始实验</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>☀️ 太阳能板最佳角度计算器</h3>
+          <div class="grid-2" style="margin-top:16px">
+            <div class="input-group">
+              <label>所在纬度</label>
+              <input type="number" id="latitudeInput" value="30" min="0" max="90" oninput="calculateSolarAngle()">
+            </div>
+            <div class="input-group">
+              <label>季节</label>
+              <select id="seasonSelect" onchange="calculateSolarAngle()">
+                <option value="spring">春季</option>
+                <option value="summer">夏季</option>
+                <option value="autumn">秋季</option>
+                <option value="winter">冬季</option>
+              </select>
+            </div>
+          </div>
+          <div id="solarAngleResult" style="margin-top:20px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-size:0.9rem;color:var(--text-secondary)">最佳安装角度</div>
+            <div style="font-size:2rem;font-weight:700;color:var(--accent-yellow)">40°</div>
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">方位角：正南朝向</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌫️ 空气质量指数(AQI)模拟器</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节污染源强度，观察空气质量变化</p>
+          <div class="grid-3" style="margin-bottom:16px">
+            <div class="slider-container">
+              <span>工业排放</span>
+              <input type="range" class="slider" min="0" max="100" value="40" id="industrySlider" oninput="updateAQI()">
+            </div>
+            <div class="slider-container">
+              <span>交通排放</span>
+              <input type="range" class="slider" min="0" max="100" value="50" id="trafficSlider" oninput="updateAQI()">
+            </div>
+            <div class="slider-container">
+              <span>风速 (净化)</span>
+              <input type="range" class="slider" min="0" max="100" value="30" id="windSlider" oninput="updateAQI()">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:30px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <div style="text-align:center">
+              <div id="aqiValue" style="font-size:3rem;font-weight:700;color:var(--accent-green)">50</div>
+              <div style="font-size:0.9rem;color:var(--text-secondary)">AQI指数</div>
+            </div>
+            <div id="aqiLevel" style="padding:12px 24px;border-radius:8px;background:var(--accent-green);color:white;font-weight:600">
+              优
+            </div>
+            <div id="aqiIcon" style="font-size:3rem">😊</div>
+          </div>
+          <div id="aqiEffects" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <div><strong>健康影响：</strong><span style="color:var(--accent-green)">空气质量优，适合户外活动</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌧️ 降水类型判断互动</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节温度和湿度，判断降水类型</p>
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="input-group">
+              <label>地面温度 (°C)</label>
+              <input type="number" id="groundTemp" value="15" min="-20" max="40" oninput="predictPrecipitation()">
+            </div>
+            <div class="input-group">
+              <label>相对湿度 (%)</label>
+              <input type="range" class="slider" min="0" max="100" value="80" id="humidity" oninput="predictPrecipitation()">
+            </div>
+          </div>
+          <div id="precipitationResult" style="padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-size:3rem;margin-bottom:12px">🌧️</div>
+            <div style="font-size:1.5rem;font-weight:600;color:var(--accent-cyan)">降雨</div>
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">当前条件下最可能的降水类型</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="thermal" class="tab-content">
+        <div class="card">
+          <h3>🌊 海陆风互动演示</h3>
+          <div class="grid-2" style="margin-top:16px">
+            <div style="text-align:center">
+              <button class="btn" onclick="showSeaLandWind('day')">☀️ 白天</button>
+              <div class="thermal-diagram" style="margin-top:16px;background:linear-gradient(to top,#87ceeb,#fff)">
+                <div class="sea-land">
+                  <div class="sea" style="border-radius:0 0 0 0"></div>
+                  <div class="land"></div>
+                </div>
+                <div id="dayLandWind" class="wind-arrow" style="bottom:100px;left:30%;display:none">🌬️ 陆风→</div>
+                <div id="daySeaWind" class="wind-arrow" style="bottom:120px;right:30%;display:none">←🌊 海风</div>
+              </div>
+            </div>
+            <div style="text-align:center">
+              <button class="btn" onclick="showSeaLandWind('night')">🌙 夜晚</button>
+              <div class="thermal-diagram" style="margin-top:16px;background:linear-gradient(to top,#1a3a5c,#34495e)">
+                <div class="sea-land">
+                  <div class="sea"></div>
+                  <div class="land"></div>
+                </div>
+                <div id="nightLandWind" class="wind-arrow" style="bottom:100px;right:30%;display:none">🌬️ 山风→</div>
+                <div id="nightSeaWind" class="wind-arrow" style="bottom:120px;left:30%;display:none">←🌊 海风</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <p><strong>白天：</strong>陆地升温快，形成低压；海洋升温慢，形成高压。风从海洋吹向陆地（海风）</p>
+            <p style="margin-top:8px"><strong>夜晚：</strong>陆地降温快，形成高压；海洋降温慢，形成低压。风从陆地吹向海洋（陆风）</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>⛰️ 山谷风演示</h3>
+          <div class="grid-2" style="margin-top:16px">
+            <div style="text-align:center">
+              <div style="font-weight:600;margin-bottom:8px">🌄 白天 - 谷风</div>
+              <div style="height:150px;background:linear-gradient(to top,#f39c12,#87ceeb);border-radius:12px;position:relative">
+                <div style="position:absolute;bottom:50%;left:30%;font-size:2rem">⛰️</div>
+                <div style="position:absolute;bottom:50%;right:30%;font-size:2rem">🏔️</div>
+                <div style="position:absolute;bottom:30%;left:50%;transform:translateX(-50%);color:white;font-size:1.2rem">↑ 谷风</div>
+              </div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-weight:600;margin-bottom:8px">🌙 夜晚 - 山风</div>
+              <div style="height:150px;background:linear-gradient(to top,#1a3a5c,#2c3e50);border-radius:12px;position:relative">
+                <div style="position:absolute;bottom:50%;left:30%;font-size:2rem">⛰️</div>
+                <div style="position:absolute;bottom:50%;right:30%;font-size:2rem">🏔️</div>
+                <div style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:white;font-size:1.2rem">↓ 山风</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🏙️ 城市热岛环流</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">城市热岛效应引起的空气环流</p>
+          <div style="display:flex;justify-content:center;padding:20px">
+            <div style="width:300px;height:200px;background:linear-gradient(to top,#e74c3c,#f39c12,#87ceeb);border-radius:50% 50% 0 0;position:relative">
+              <div style="position:absolute;top:30%;left:50%;transform:translateX(-50%);font-size:3rem">🏙️</div>
+              <div style="position:absolute;top:20%;left:20%;font-size:1.2rem">↑ 上升气流</div>
+              <div style="position:absolute;top:60%;left:10%;font-size:1.2rem">→ 郊区气流</div>
+              <div style="position:absolute;top:60%;right:10%;font-size:1.2rem">← 郊区气流</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <p>城市热岛效应使城市中心气温高于郊区，形成城市中心上升气流、近郊区下沉气流的环流系统。</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🏮 孔明灯飞行模拟</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节底部火焰温度，观察孔明灯的升降变化（可多次调节）</p>
+          <div style="display:flex;align-items:flex-end;justify-content:center;gap:40px;padding:20px">
+            <div style="position:relative;height:200px;width:100px;">
+              <div class="lantern" id="lantern" style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);transition:bottom 0.5s ease;"></div>
+              <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center;">
+                <div id="flame" style="font-size:1.5rem;transition:all 0.3s ease;">🔥</div>
+              </div>
+            </div>
+            <div class="slider-container" style="flex-direction:column;height:150px">
+              <span>底部温度</span>
+              <input type="range" class="slider" style="writing-mode:vertical-lr;direction:rtl;height:100px" min="-20" max="100" value="50" id="lanternTemp" oninput="updateLantern()">
+              <span id="lanternTempValue">50°C</span>
+            </div>
+          </div>
+          <div id="lanternStatus" style="text-align:center;padding:12px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>孔明灯正常悬停</strong>
+          </div>
+          <button class="btn" style="margin-top:16px;display:block;margin-left:auto;margin-right:auto" onclick="resetLantern()">🔄 重置模拟</button>
+        </div>
+
+        </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>大气系统 | 数据来源：中国气象局、NOAA、WMO</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    const layerInfoData = {
+      troposphere: { name: '对流层', height: '0-12 km', temp: '随高度降低 (-6.5°C/km)', features: '天气现象、风、雨雪发生在这一层', humanRelation: '人类主要活动区域，航空飞行' },
+      stratosphere: { name: '平流层', height: '12-50 km', temp: '随高度升高 (臭氧吸收紫外线)', features: '臭氧层吸收紫外线，飞机航行', humanRelation: '臭氧层保护地球生物，飞机巡航高度' },
+      mesosphere: { name: '中间层', height: '50-80 km', temp: '随高度降低 (-4°C/km)', features: '流星燃烧、大气最冷层', humanRelation: '航天器再入大气层区域' },
+      thermosphere: { name: '热层', height: '80-500 km', temp: '随高度升高 (可达2000°C)', features: '极光、卫星轨道、国际空间站', humanRelation: '卫星运行轨道，无线电通信' },
+      exosphere: { name: '散逸层', height: '500+ km', temp: '随高度升高', features: '气体逐渐逸散到太空，人造卫星', humanRelation: 'GPS卫星轨道，大气层边界' }
+    };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'layers') initOzoneChart();
+      if (tabId === 'heating') initGreenhouseChart();
+    }
+
+    function showLayerInfo(layer) {
+      const data = layerInfoData[layer];
+      if (!data) return;
+      document.getElementById('layerInfo').innerHTML = `
+        <div style="display:grid;gap:8px">
+          <div><strong>${data.name}</strong> <span style="color:var(--accent-cyan)">${data.height}</span></div>
+          <div><strong>温度变化：</strong>${data.temp}</div>
+          <div><strong>特点：</strong>${data.features}</div>
+          <div><strong>与人类关系：</strong>${data.humanRelation}</div>
+        </div>
+      `;
+      GeoApp.saveProgress('sheet4', { layerExplored: layer });
+    }
+
+    function showGas(gas) {
+      const gases = {
+        nitrogen: { name: '氮气 N₂', percent: '78%', height: '0-100km均匀分布', 
+                   description: '大气中含量最多的气体，是蛋白质和核酸的重要组成部分',
+                   uses: '合成氨、食品保鲜、工业保护气' },
+        oxygen: { name: '氧气 O₂', percent: '21%', height: '0-100km均匀分布',
+                  description: '生命活动必需的气体，支持燃烧和呼吸作用',
+                  uses: '呼吸、燃烧、医疗急救' },
+        co2: { name: '二氧化碳 CO₂', percent: '0.04%', height: '主要在对流层',
+               description: '温室气体，植物光合作用的原料',
+               uses: '光合作用、碳酸饮料、灭火' },
+        ozone: { name: '臭氧 O₃', percent: '约0.000004%', height: '主要在平流层(臭氧层)',
+                description: '能吸收紫外线，保护地球生物',
+                uses: '臭氧层保护、消毒杀菌' }
+      };
+      const data = gases[gas];
+      if (!data) return;
+
+      const balloon = document.getElementById('gasBalloon');
+      const colors = {
+        nitrogen: 'radial-gradient(ellipse at 30% 30%, #4a90e2, #1a5276)',
+        oxygen: 'radial-gradient(ellipse at 30% 30%, #e74c3c, #c0392b)',
+        co2: 'radial-gradient(ellipse at 30% 30%, #27ae60, #1e8449)',
+        ozone: 'radial-gradient(ellipse at 30% 30%, #9b59b6, #8e44ad)'
+      };
+
+      balloon.style.background = colors[gas];
+      document.getElementById('gasLabel').textContent = `${data.name}`;
+      
+      document.getElementById('gasInfo').innerHTML = `
+        <div style="display:grid;gap:8px">
+          <div><strong>占比：</strong><span style="color:var(--accent-cyan)">${data.percent}</span></div>
+          <div><strong>分布高度：</strong>${data.height}</div>
+          <div><strong>描述：</strong>${data.description}</div>
+          <div><strong>用途：</strong>${data.uses}</div>
+        </div>
+      `;
+    }
+
+    function calculateAltitude() {
+      const alt = parseInt(document.getElementById('altitudeInput').value) || 0;
+      document.getElementById('altitudeSlider').value = Math.min(alt, 50000);
+
+      let temp, pressure, oxygen, desc;
+      if (alt < 1000) {
+        temp = 15 - alt * 0.0065;
+        pressure = 1013 * Math.pow(1 - alt / 44300, 5.255);
+        oxygen = 21;
+        desc = '适合人类活动';
+      } else if (alt < 5000) {
+        temp = 5 - (alt - 1000) * 0.01;
+        pressure = 1013 * Math.pow(1 - alt / 44300, 5.255);
+        oxygen = 21 - (alt - 1000) / 500;
+        desc = '高原环境，可能有高原反应';
+      } else if (alt < 8000) {
+        temp = -25 - (alt - 5000) * 0.015;
+        pressure = 540 * Math.pow(1 - (alt - 5000) / 20000, 5);
+        oxygen = 14 - (alt - 5000) / 1000;
+        desc = '需要吸氧设备';
+      } else {
+        temp = -45 - (alt - 8000) * 0.002;
+        pressure = 360 * Math.pow(1 - (alt - 8000) / 15000, 5.5);
+        oxygen = 8 - (alt - 8000) / 2000;
+        desc = '人类生存极限区域';
+      }
+
+      document.getElementById('altitudeResult').innerHTML = `
+        <div style="margin-bottom:8px"><strong>当前海拔：</strong>${alt.toLocaleString()} m</div>
+        <div style="margin-bottom:8px"><strong>温度：</strong>${temp.toFixed(1)}°C</div>
+        <div style="margin-bottom:8px"><strong>气压：</strong>${pressure.toFixed(0)} hPa</div>
+        <div style="margin-bottom:8px"><strong>氧气含量：</strong>约${oxygen.toFixed(1)}%</div>
+        <div><strong>环境描述：</strong>${desc}</div>
+      `;
+    }
+
+    function syncAltitude() {
+      document.getElementById('altitudeInput').value = document.getElementById('altitudeSlider').value;
+      calculateAltitude();
+    }
+
+    function compareSurface(color) {
+      const surfaces = {
+        black: { name: '黑色地面', absorption: '95%', temp: '+25°C', reason: '吸收几乎所有太阳辐射' },
+        white: { name: '白色地面', absorption: '20%', temp: '+5°C', reason: '反射大部分太阳辐射' },
+        green: { name: '绿色地面', absorption: '70%', temp: '+15°C', reason: '植被通过蒸腾调节温度' },
+        yellow: { name: '黄色地面', absorption: '60%', temp: '+12°C', reason: '沙漠反射率较高' }
+      };
+      const data = surfaces[color];
+      if (!data) return;
+      document.getElementById('surfaceResult').innerHTML = `
+        <div style="font-size:1.2rem;font-weight:600;color:var(--accent-cyan)">${data.name}</div>
+        <div style="margin-top:8px"><strong>吸热率：</strong>${data.absorption}</div>
+        <div><strong>模拟温升：</strong>${data.temp}</div>
+        <div style="margin-top:8px;font-size:0.9rem">${data.reason}</div>
+      `;
+      GeoApp.saveProgress('sheet4', { surfaceExperiment: color });
+    }
+
+    function showSeaLandWind(time) {
+      document.querySelectorAll('.wind-arrow').forEach(el => el.style.display = 'none');
+      if (time === 'day') {
+        document.getElementById('daySeaWind').style.display = 'block';
+      } else {
+        document.getElementById('nightLandWind').style.display = 'block';
+      }
+    }
+
+    function updateLantern() {
+      const temp = parseInt(document.getElementById('lanternTemp').value);
+      document.getElementById('lanternTempValue').textContent = temp + '°C';
+
+      const lantern = document.getElementById('lantern');
+      const flame = document.getElementById('flame');
+      const status = document.getElementById('lanternStatus');
+
+      if (temp < 10) {
+        lantern.style.bottom = '30px';
+        flame.style.fontSize = '1rem';
+        flame.style.opacity = '0.5';
+        status.innerHTML = '<strong style="color:var(--accent-blue)">🌡️ 温度过低，火焰微弱，孔明灯无法上升</strong>';
+      } else if (temp < 30) {
+        lantern.style.bottom = '60px';
+        flame.style.fontSize = '1.2rem';
+        flame.style.opacity = '0.7';
+        status.innerHTML = '<strong style="color:var(--accent-yellow)">🌡️ 温度较低，上升力不足，缓慢上升</strong>';
+      } else if (temp < 50) {
+        lantern.style.bottom = '100px';
+        flame.style.fontSize = '1.5rem';
+        flame.style.opacity = '0.9';
+        status.innerHTML = '<strong style="color:var(--accent-green)">🌡️ 温度适中，孔明灯稳定上升</strong>';
+      } else if (temp < 80) {
+        lantern.style.bottom = '140px';
+        flame.style.fontSize = '1.8rem';
+        flame.style.opacity = '1';
+        status.innerHTML = '<strong style="color:var(--accent-orange)">🌡️ 温度较高，上升力强，快速上升</strong>';
+      } else {
+        lantern.style.bottom = '160px';
+        flame.style.fontSize = '2rem';
+        flame.style.opacity = '1';
+        status.innerHTML = '<strong style="color:var(--accent-red)">🌡️ 温度极高，上升速度非常快！</strong>';
+      }
+    }
+
+    function resetLantern() {
+      document.getElementById('lanternTemp').value = '50';
+      document.getElementById('lantern').style.bottom = '100px';
+      document.getElementById('flame').style.fontSize = '1.5rem';
+      document.getElementById('flame').style.opacity = '0.9';
+      document.getElementById('lanternTempValue').textContent = '50°C';
+      document.getElementById('lanternStatus').innerHTML = '<strong style="color:var(--accent-green)">🌡️ 温度适中，孔明灯稳定上升</strong>';
+    }
+
+    function updateGreenhouse() {
+      const co2 = parseInt(document.getElementById('co2Slider').value);
+      const ch4 = parseInt(document.getElementById('ch4Slider').value);
+      document.getElementById('co2Value').textContent = co2 + ' ppm';
+      document.getElementById('ch4Value').textContent = ch4 + ' ppb';
+
+      const baseTemp = 13.7;
+      const co2Effect = (co2 - 280) * 0.0083;
+      const ch4Effect = (ch4 - 700) * 0.00023;
+      const totalEffect = baseTemp + co2Effect + ch4Effect;
+      const increase = totalEffect - baseTemp;
+
+      const tempDisplay = document.getElementById('tempPrediction');
+      tempDisplay.textContent = '+' + increase.toFixed(2) + '°C';
+
+      if (increase < 1.5) {
+        tempDisplay.style.color = 'var(--accent-green)';
+      } else if (increase < 2.0) {
+        tempDisplay.style.color = 'var(--accent-yellow)';
+      } else {
+        tempDisplay.style.color = 'var(--accent-red)';
+      }
+
+      updateGreenhouseChart(co2, ch4);
+      updateClimateEffects(increase);
+    }
+
+    function updateClimateEffects(tempIncrease) {
+      const effects = document.getElementById('climateEffects');
+      if (!effects) return;
+
+      let effectList = [];
+      if (tempIncrease >= 1) effectList.push('🌡️ 极端高温事件增加');
+      if (tempIncrease >= 1.5) effectList.push('🌊 海平面上升加速');
+      if (tempIncrease >= 2) effectList.push('❄️ 极地冰盖加速融化');
+      if (tempIncrease >= 2.5) effectList.push('🌧️ 极端降水事件增多');
+      if (tempIncrease >= 3) effectList.push('🏜️ 干旱区域扩大');
+      if (tempIncrease >= 3.5) effectList.push('🐠 海洋生态系统破坏');
+      if (tempIncrease >= 4) effectList.push('⚠️ 全球气候系统不稳定');
+
+      effects.innerHTML = effectList.map(e => `<div>${e}</div>`).join('');
+    }
+
+    function calculateSolarAngle() {
+      const lat = parseInt(document.getElementById('latitudeInput').value) || 30;
+      const season = document.getElementById('seasonSelect').value;
+
+      const seasonalOffsets = { spring: 0, summer: 23.5, autumn: 0, winter: -23.5 };
+      const offset = seasonalOffsets[season];
+      const solarAlt = 90 - lat + offset;
+      const panelAngle = Math.max(0, Math.min(90, lat - offset));
+
+      document.querySelector('#solarAngleResult div:nth-child(2)').textContent = panelAngle + '°';
+      document.querySelector('#solarAngleResult div:nth-child(3)').textContent = '太阳高度角: ' + solarAlt.toFixed(0) + '°';
+    }
+
+    function updateAQI() {
+      const industry = parseInt(document.getElementById('industrySlider').value) || 0;
+      const traffic = parseInt(document.getElementById('trafficSlider').value) || 0;
+      const wind = parseInt(document.getElementById('windSlider').value) || 0;
+
+      const baseAQI = industry * 1.5 + traffic * 1.2;
+      const windReduction = wind * 0.8;
+      const aqi = Math.max(0, Math.min(500, Math.round(baseAQI - windReduction)));
+
+      const aqiValue = document.getElementById('aqiValue');
+      const aqiLevel = document.getElementById('aqiLevel');
+      const aqiIcon = document.getElementById('aqiIcon');
+      const aqiEffects = document.getElementById('aqiEffects');
+
+      let level, color, icon, effect;
+      if (aqi <= 50) {
+        level = '优';
+        color = 'var(--accent-green)';
+        icon = '😊';
+        effect = '空气质量优，适合户外活动';
+      } else if (aqi <= 100) {
+        level = '良';
+        color = 'var(--accent-yellow)';
+        icon = '🙂';
+        effect = '空气质量可接受，少数敏感人群应减少户外活动';
+      } else if (aqi <= 150) {
+        level = '轻度污染';
+        color = 'var(--accent-orange)';
+        icon = '😐';
+        effect = '敏感人群应减少户外活动';
+      } else if (aqi <= 200) {
+        level = '中度污染';
+        color = 'var(--accent-red)';
+        icon = '😷';
+        effect = '所有人应减少户外活动';
+      } else {
+        level = '重度污染';
+        color = '#9b59b6';
+        icon = '🤒';
+        effect = '避免户外活动，佩戴口罩';
+      }
+
+      aqiValue.textContent = aqi;
+      aqiValue.style.color = color;
+      aqiLevel.textContent = level;
+      aqiLevel.style.background = color;
+      aqiIcon.textContent = icon;
+      aqiEffects.innerHTML = `<div><strong>健康影响：</strong><span style="color:${color}">${effect}</span></div>`;
+    }
+
+    function predictPrecipitation() {
+      const temp = parseInt(document.getElementById('groundTemp').value) || 15;
+      const humidity = parseInt(document.getElementById('humidity').value) || 80;
+
+      const result = document.getElementById('precipitationResult');
+      let icon, type, color, desc;
+
+      if (humidity < 60) {
+        icon = '☀️';
+        type = '无降水';
+        color = 'var(--accent-yellow)';
+        desc = '湿度不足，难以形成降水';
+      } else if (temp < -5) {
+        icon = '❄️';
+        type = '降雪';
+        color = 'var(--accent-blue)';
+        desc = '气温低于冰点，形成降雪';
+      } else if (temp < 2) {
+        icon = '🌨️';
+        type = '雨夹雪';
+        color = 'var(--accent-cyan)';
+        desc = '气温接近冰点，雨和雪混合';
+      } else if (temp < 10) {
+        icon = '🌧️';
+        type = '小雨';
+        color = 'var(--accent-blue)';
+        desc = '气温较低，形成小雨';
+      } else {
+        icon = '⛈️';
+        type = '雷阵雨';
+        color = 'var(--accent-orange)';
+        desc = '气温较高，可能伴随雷电';
+      }
+
+      result.innerHTML = `
+        <div style="font-size:3rem;margin-bottom:12px">${icon}</div>
+        <div style="font-size:1.5rem;font-weight:600;color:${color}">${type}</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">${desc}</div>
+      `;
+    }
+
+    function initOzoneChart() {
+      const chartEl = document.getElementById('ozoneChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['臭氧浓度(Dobson单位)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['1979', '1985', '1990', '1995', '2000', '2005', '2010', '2015', '2020'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: 'Dobson单位', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'line',
+          smooth: true,
+          data: [300, 280, 240, 220, 200, 180, 170, 165, 160],
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(155,89,182,0.5)' }, { offset: 1, color: 'rgba(155,89,182,0)' }]) },
+          lineStyle: { color: '#9b59b6' },
+          itemStyle: { color: '#9b59b6' }
+        }]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initGreenhouseChart() {
+      const chartEl = document.getElementById('greenhouseChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      updateGreenhouseChart(420, 1900);
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function updateGreenhouseChart(co2, ch4) {
+      const chartEl = document.getElementById('greenhouseChart');
+      if (!chartEl) return;
+
+      const chart = echarts.getInstanceByDom(chartEl) || echarts.init(chartEl);
+      const baseTemp = 13.7;
+      const co2Effect = (co2 - 280) * 0.0083;
+      const currentTemp = 14.8;
+      const year2030Temp = 15.3;
+      const year2050Temp = 15.9;
+
+      chart.setOption({
+        tooltip: { 
+          trigger: 'axis',
+          formatter: function(params) {
+            const data = params[0];
+            const values = {
+              '工业革命前\n(280ppm)': { co2: 280, temp: 13.7, desc: '工业革命前，人类活动影响较小' },
+              '当前\n(420ppm)': { co2: 420, temp: 14.8, desc: '当前水平，已上升约1.1°C' },
+              '2030年预测\n(500ppm)': { co2: 500, temp: 15.3, desc: '若不减排，继续上升' },
+              '2050年预测\n(600ppm)': { co2: 600, temp: 15.9, desc: '高排放情景预测' }
+            };
+            const info = values[data.name];
+            return `<strong>${data.name}</strong><br/>CO₂浓度: ${info.co2} ppm<br/>温度: ${info.temp}°C<br/>${info.desc}`;
+          }
+        },
+        xAxis: { type: 'category', data: ['工业革命前\n(280ppm)', '当前\n(420ppm)', '2030年预测\n(500ppm)', '2050年预测\n(600ppm)'], axisLabel: { color: '#b0b0d0', fontSize: 10 } },
+        yAxis: { type: 'value', name: '全球平均温度°C', min: 13, max: 17, axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'bar',
+          data: [baseTemp, currentTemp, year2030Temp, year2050Temp],
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#27ae60' },
+              { offset: 0.3, color: '#2980b9' },
+              { offset: 0.6, color: '#f1c40f' },
+              { offset: 1, color: '#e74c3c' }
+            ])
+          },
+          label: { show: true, position: 'top', formatter: '{c}°C', color: '#fff', fontSize: 12 }
+        }]
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      calculateAltitude();
+      calculateSolarAngle();
+      updateAQI();
+      predictPrecipitation();
+      initOzoneChart();
+    });
+  </script>
+</body>
+</html>

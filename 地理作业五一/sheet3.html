@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地球的结构与演化 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .earth-cross-section {
+      width: 350px;
+      height: 350px;
+      margin: 20px auto;
+      position: relative;
+      border-radius: 50%;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .earth-layer {
+      position: absolute;
+      border-radius: 50%;
+      transition: all 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .layer-crust {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #8b7355, #6b5344);
+      z-index: 5;
+    }
+
+    .layer-mantle {
+      width: 85%;
+      height: 85%;
+      background: linear-gradient(135deg, #cd853f, #8b4513);
+      z-index: 4;
+    }
+
+    .layer-outer-core {
+      width: 45%;
+      height: 45%;
+      background: linear-gradient(135deg, #ffa500, #ff6600);
+      z-index: 3;
+    }
+
+    .layer-inner-core {
+      width: 20%;
+      height: 20%;
+      background: linear-gradient(135deg, #ffff00, #ffd700);
+      z-index: 2;
+    }
+
+    .earth-cut-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: #333;
+      top: 50%;
+      left: 0;
+      z-index: 10;
+      transform-origin: center;
+      transition: transform 0.5s ease;
+    }
+
+    .depth-indicator {
+      position: absolute;
+      right: -100px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-card);
+      padding: 16px;
+      border-radius: 12px;
+      min-width: 150px;
+    }
+
+    .depth-bar {
+      width: 20px;
+      height: 200px;
+      background: linear-gradient(to bottom, #8b7355, #cd853f, #ffa500, #ffff00);
+      border-radius: 10px;
+      margin: 0 auto 12px;
+      position: relative;
+    }
+
+    .depth-marker {
+      position: absolute;
+      left: -5px;
+      width: 30px;
+      height: 3px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .timeline-container {
+      overflow-x: auto;
+      padding: 20px 0;
+      scrollbar-width: thin;
+    }
+
+    .timeline {
+      display: flex;
+      gap: 0;
+      min-width: max-content;
+      position: relative;
+      padding: 0 40px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #4a90e2, #00d4ff, #27ae60, #f1c40f, #e74c3c);
+      border-radius: 2px;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 0 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-item:hover {
+      transform: scale(1.05);
+    }
+
+    .timeline-dot {
+      width: 20px;
+      height: 20px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      box-shadow: 0 0 10px var(--accent-cyan);
+      position: relative;
+      z-index: 2;
+    }
+
+    .timeline-content {
+      background: var(--bg-card);
+      padding: 16px;
+      border-radius: 12px;
+      min-width: 180px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .timeline-era {
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+      margin-bottom: 4px;
+    }
+
+    .timeline-time {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .plate-map {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(135deg, #1a3a5c, #0d1f33);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plate {
+      position: absolute;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .plate:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(255,255,255,0.3);
+      z-index: 10;
+    }
+
+    .plate-pacific { background: linear-gradient(135deg, #e74c3c, #c0392b); width: 25%; height: 30%; top: 30%; left: 10%; }
+    .plate-north-american { background: linear-gradient(135deg, #3498db, #2980b9); width: 20%; height: 25%; top: 25%; left: 20%; }
+    .plate-south-american { background: linear-gradient(135deg, #27ae60, #1e8449); width: 15%; height: 25%; top: 50%; left: 25%; }
+    .plate-african { background: linear-gradient(135deg, #f39c12, #d68910); width: 18%; height: 28%; top: 45%; left: 45%; }
+    .plate-eurasian { background: linear-gradient(135deg, #9b59b6, #8e44ad); width: 25%; height: 20%; top: 20%; left: 55%; }
+    .plate-australian { background: linear-gradient(135deg, #1abc9c, #16a085); width: 12%; height: 15%; top: 60%; left: 65%; }
+    .plate-antarctic { background: linear-gradient(135deg, #ecf0f1, #bdc3c7); width: 20%; height: 15%; top: 70%; left: 40%; }
+
+    .pangaea-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .fossil-card {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+
+    .fossil-icon {
+      font-size: 2.5rem;
+      flex-shrink: 0;
+    }
+
+    .asteroid-sim {
+      width: 100%;
+      height: 300px;
+      background: radial-gradient(ellipse at bottom, #2d1f0f 0%, #0a0a1a 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .asteroid {
+      position: absolute;
+      background: radial-gradient(circle, #8b7355, #4a3728);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .impact-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,200,0,0.8), rgba(255,100,0,0.4), transparent);
+      animation: impactPulse 1s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes impactPulse {
+      0% { transform: scale(0); opacity: 1; }
+      100% { transform: scale(5); opacity: 0; }
+    }
+
+    @keyframes fireball {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+    }
+
+    @keyframes shockwave {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; border-width: 3px; }
+      100% { transform: translate(-50%, -50%) scale(15); opacity: 0; border-width: 1px; }
+    }
+
+    .atmosphere-chart {
+      width: 100%;
+      height: 250px;
+    }
+
+    .drift-year {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body data-theme="earth-structure">
+  <nav class="nav-bar">
+    <div class="nav-brand">🌍 地球的结构</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link active">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('layers')">地球圈层</button>
+        <button class="tab" onclick="switchTab('evolution')">地球演化史</button>
+        <button class="tab" onclick="switchTab('tectonics')">板块运动</button>
+        <button class="tab" onclick="switchTab('events')">重大地质事件</button>
+      </div>
+
+      <div id="layers" class="tab-content active">
+        <div class="grid-2">
+          <div class="card">
+            <h3>🔬 地球圈层结构</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">拖动滑块切开地球，观察内部圈层结构</p>
+            <div style="position:relative;display:flex;justify-content:center">
+              <div class="earth-cross-section" id="earthSection">
+                <div class="earth-layer layer-crust">
+                  <span style="position:absolute;top:15%;left:50%;transform:translateX(-50%) rotate(-30deg)">地壳</span>
+                </div>
+                <div class="earth-layer layer-mantle">
+                  <span style="position:absolute;top:35%;left:50%;transform:translateX(-50%) rotate(-20deg)">地幔</span>
+                </div>
+                <div class="earth-layer layer-outer-core">
+                  <span>外核</span>
+                </div>
+                <div class="earth-layer layer-inner-core">
+                  <span>内核</span>
+                </div>
+                <div class="earth-cut-line" id="cutLine"></div>
+              </div>
+            </div>
+            <div class="slider-container">
+              <span>切开程度</span>
+              <input type="range" class="slider" min="0" max="100" value="0" id="cutSlider" oninput="updateEarthCut(this.value)">
+            </div>
+            <div id="layerInfoDisplay" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <strong>拖动滑块切开地球查看圈层信息</strong>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🎮 地心旅行模拟器</h3>
+            <p style="color:var(--text-secondary);margin-bottom:16px">模拟从地表到地心的旅程，观察环境变化</p>
+            <div class="depth-indicator">
+              <div class="depth-bar">
+                <div class="depth-marker" id="depthMarker" style="top:0%"></div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:0.8rem;color:var(--text-secondary)">当前深度</div>
+                <div style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan)" id="currentDepth">0 km</div>
+              </div>
+            </div>
+            <div class="slider-container" style="margin-top:20px">
+              <span>旅行进度</span>
+              <input type="range" class="slider" min="0" max="100" value="0" id="depthSlider" oninput="updateDepthTravel(this.value)">
+            </div>
+            <div id="depthInfo" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+              <div style="margin-bottom:8px"><strong>当前位置：</strong>地表</div>
+              <div style="margin-bottom:8px"><strong>温度：</strong>15°C</div>
+              <div style="margin-bottom:8px"><strong>压力：</strong>1 atm</div>
+              <div><strong>环境描述：</strong>人类可以正常生存</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📊 地球圈层数据</h3>
+          <p class="data-source">数据来源：中国地震台网中心</p>
+          <div class="chart-container large" id="layerChart"></div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>💎 钻石形成过程</h3>
+          <div class="grid-4" style="margin-top:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">🪨</div>
+              <div style="font-weight:600">1. 碳源形成</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">碳元素在地下150km深处<br>温度900-1300°C<br>压力4-6GPa</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">⚡</div>
+              <div style="font-weight:600">2. 晶体形成</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">碳原子在高温高压下<br>结晶成金刚石<br>需要数十亿年</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">🌋</div>
+              <div style="font-weight:600">3. 岩浆上升</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">金伯利岩浆上升<br>携带钻石到地表<br>形成金伯利岩筒</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px;text-align:center">
+              <div style="font-size:2rem;margin-bottom:12px">⛏️</div>
+              <div style="font-weight:600">4. 开采利用</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">火山喷发后<br>钻石沉积在河床<br>被人类开采</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="evolution" class="tab-content">
+        <div class="card">
+          <h3>⏳ 地球演化史时间轴</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">拖动时间轴，了解46亿年来地球的重大变化</p>
+          <div class="timeline-container">
+            <div class="timeline" id="evolutionTimeline">
+              <div class="timeline-item" onclick="showEraDetail('hadean')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">冥古宙</div>
+                  <div class="timeline-time">46-40亿年前</div>
+                </div>
+              </div>
+              <div class="timeline-item" onclick="showEraDetail('archean')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">太古宙</div>
+                  <div class="timeline-time">40-25亿年前</div>
+                </div>
+              </div>
+              <div class="timeline-item" onclick="showEraDetail('proterozoic')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">元古宙</div>
+                  <div class="timeline-time">25-5.4亿年前</div>
+                </div>
+              </div>
+              <div class="timeline-item" onclick="showEraDetail('phaneo')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">显古宙-古生代</div>
+                  <div class="timeline-time">5.4-2.5亿年前</div>
+                </div>
+              </div>
+              <div class="timeline-item" onclick="showEraDetail('meso')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">显古宙-中生代</div>
+                  <div class="timeline-time">2.5-0.66亿年前</div>
+                </div>
+              </div>
+              <div class="timeline-item" onclick="showEraDetail('ceno')">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-era">显古宙-新生代</div>
+                  <div class="timeline-time">6600万年前-现在</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="eraDetail" style="margin-top:24px;padding:24px;background:rgba(255,255,255,0.05);border-radius:16px">
+            <h4 style="color:var(--accent-cyan)">点击上方时间轴了解各个地质年代详情</h4>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🦴 时间胶囊 - 化石探索</h3>
+          <div class="grid-4" style="margin-top:16px">
+            <div class="fossil-card" onclick="showFossil('trilobite')">
+              <div class="fossil-icon">🦀</div>
+              <div>
+                <div style="font-weight:600">三叶虫</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">寒武纪代表化石<br>距今约5亿年</div>
+              </div>
+            </div>
+            <div class="fossil-card" onclick="showFossil('dinosaur')">
+              <div class="fossil-icon">🦖</div>
+              <div>
+                <div style="font-weight:600">恐龙化石</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">侏罗纪代表化石<br>距今约1.5亿年</div>
+              </div>
+            </div>
+            <div class="fossil-card" onclick="showFossil('ammonite')">
+              <div class="fossil-icon">🐚</div>
+              <div>
+                <div style="font-weight:600">菊石</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">中生代代表化石<br>与恐龙同时代</div>
+              </div>
+            </div>
+            <div class="fossil-card" onclick="showFossil('mammoth')">
+              <div class="fossil-icon">🦣</div>
+              <div>
+                <div style="font-weight:600">猛犸象</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary)">新生代代表化石<br>距今约1万年</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌬️ 大气成分变化</h3>
+          <p class="data-source">数据来源：地质记录同位素分析</p>
+          <div class="chart-container large" id="atmosphereChart"></div>
+        </div>
+      </div>
+
+      <div id="tectonics" class="tab-content">
+        <div class="card">
+          <h3>🧩 世界板块分布</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击板块查看详细信息</p>
+          <div class="plate-map" id="plateMap">
+            <div class="plate plate-pacific" onclick="showPlateInfo('pacific')">太平洋板块</div>
+            <div class="plate plate-north-american" onclick="showPlateInfo('north-american')">北美板块</div>
+            <div class="plate plate-south-american" onclick="showPlateInfo('south-american')">南美板块</div>
+            <div class="plate plate-african" onclick="showPlateInfo('african')">非洲板块</div>
+            <div class="plate plate-eurasian" onclick="showPlateInfo('eurasian')">欧亚板块</div>
+            <div class="plate plate-australian" onclick="showPlateInfo('australian')">澳大利亚板块</div>
+            <div class="plate plate-antarctic" onclick="showPlateInfo('antarctic')">南极洲板块</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌏 盘古大陆分裂动画</h3>
+          <div class="drift-year" id="driftYear">2亿年前 (侏罗纪)</div>
+          <div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px">
+            <button class="btn" onclick="animateDrift(-500)">◀ 向前</button>
+            <button class="btn btn-secondary" onclick="toggleDrift()">▶ 播放</button>
+            <button class="btn" onclick="animateDrift(500)">向后 ▶</button>
+          </div>
+          <div class="slider-container">
+            <span>时间</span>
+            <input type="range" class="slider" min="0" max="100" value="0" id="driftSlider" oninput="updateDriftPosition(this.value)">
+          </div>
+          
+          <div class="pangaea-map" id="pangaeaMap" style="width:100%;height:350px;background:linear-gradient(135deg,#1a3a5c,#0d1f33);border-radius:16px;margin-top:24px;position:relative;overflow:hidden;">
+            <div class="pangaea-ocean" style="position:absolute;inset:0;background:linear-gradient(135deg,#3498db,#2980b9);opacity:0.3;"></div>
+            <div class="continent" id="north-america" style="position:absolute;width:60px;height:50px;background:linear-gradient(135deg,#e74c3c,#c0392b);border-radius:8px;top:40%;left:30%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">北美</div>
+            <div class="continent" id="south-america" style="position:absolute;width:45px;height:60px;background:linear-gradient(135deg,#27ae60,#1e8449);border-radius:8px;top:60%;left:38%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">南美</div>
+            <div class="continent" id="africa" style="position:absolute;width:55px;height:70px;background:linear-gradient(135deg,#f39c12,#d68910);border-radius:8px;top:45%;left:48%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">非洲</div>
+            <div class="continent" id="europe" style="position:absolute;width:50px;height:45px;background:linear-gradient(135deg,#9b59b6,#8e44ad);border-radius:8px;top:35%;left:55%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">欧洲</div>
+            <div class="continent" id="asia" style="position:absolute;width:70px;height:60px;background:linear-gradient(135deg,#3498db,#2980b9);border-radius:8px;top:35%;left:60%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">亚洲</div>
+            <div class="continent" id="australia" style="position:absolute;width:40px;height:35px;background:linear-gradient(135deg,#1abc9c,#16a085);border-radius:8px;top:65%;left:68%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;transition:all 1.5s ease;">澳洲</div>
+            <div class="continent" id="antarctica" style="position:absolute;width:50px;height:40px;background:linear-gradient(135deg,#ecf0f1,#bdc3c7);border-radius:8px;top:80%;left:48%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#333;transition:all 1.5s ease;">南极</div>
+          </div>
+          
+          <div class="grid-3" style="margin-top:24px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;margin-bottom:8px">🌋 火山地震带</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">环太平洋火山地震带：占全球80%的地震和90%的火山</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;margin-bottom:8px">⛰️ 生长边界</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">大西洋中脊、东非大裂谷 - 新地块正在形成</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+              <div style="font-weight:600;margin-bottom:8px">🔄 转换边界</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary)">圣安德烈斯断层 - 板块水平滑动</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="events" class="tab-content">
+        <div class="card">
+          <h3>☄️ 小行星撞击模拟</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节小行星的大小、速度和撞击角度，观看撞击效果</p>
+          <div class="asteroid-sim" id="asteroidSim">
+            <div class="asteroid" id="asteroid" style="width:30px;height:30px;top:20%;left:50%"></div>
+          </div>
+          <div class="grid-3" style="margin-top:16px">
+            <div class="slider-container">
+              <span>大小</span>
+              <input type="range" class="slider" min="10" max="60" value="30" id="asteroidSize" oninput="updateAsteroid()">
+            </div>
+            <div class="slider-container">
+              <span>速度</span>
+              <input type="range" class="slider" min="1" max="10" value="5" id="asteroidSpeed" oninput="updateAsteroid()">
+            </div>
+            <div class="slider-container">
+              <span>角度</span>
+              <input type="range" class="slider" min="0" max="90" value="45" id="asteroidAngle" oninput="updateAsteroid()">
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:16px">
+            <button class="btn" onclick="simulateImpact()">🚀 发射小行星</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>💀 五次生物大灭绝</h3>
+          <p class="data-source">数据来源：地质记录和古生物学研究</p>
+          <div class="chart-container large" id="extinctionChart"></div>
+          <div class="grid-5" style="margin-top:24px">
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">4.4亿年前</div>
+              <div style="font-weight:600;margin-top:4px">奥陶纪大灭绝</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">85%物种消失<br>冰川活动</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">3.65亿年前</div>
+              <div style="font-weight:600;margin-top:4px">泥盆纪大灭绝</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">75%物种消失<br>海洋缺氧</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">2.5亿年前</div>
+              <div style="font-weight:600;margin-top:4px">二叠纪大灭绝</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">96%物种消失<br>史上最严重</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">2亿年前</div>
+              <div style="font-weight:600;margin-top:4px">三叠纪大灭绝</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">80%物种消失<br>恐龙崛起</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;text-align:center">
+              <div style="font-size:0.8rem;color:var(--accent-cyan)">6600万年前</div>
+              <div style="font-weight:600;margin-top:4px">白垩纪大灭绝</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">76%物种消失<br>恐龙时代结束</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="fossilModal">
+    <div class="modal-content">
+      <h2 id="fossilTitle"></h2>
+      <div id="fossilContent"></div>
+      <div style="margin-top:24px;text-align:center">
+        <button class="btn" onclick="closeModal('fossilModal')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>地球的结构与演化 | 数据来源：中国科学院、北京大学地质系</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    const eraDetails = {
+      hadean: { title: '冥古宙 (46-40亿年前)', events: ['地球形成', '原始海洋出现', '最早大气形成(氢、氦)', '大量陨石撞击'], life: '无生命', climate: '极高温，表面熔岩海', image: '🌋' },
+      archean: { title: '太古宙 (40-25亿年前)', events: ['地壳形成', '最早生命出现(原核生物)', '蓝藻开始光合作用', '海洋形成'], life: '原核生物、蓝藻', climate: '大气无氧，温室效应强', image: '🦠' },
+      proterozoic: { title: '元古宙 (25-5.4亿年前)', events: ['大气氧气增加(大氧化事件)', '多细胞生物出现', '埃迪卡拉生物群', '超大陆形成'], life: '真核生物、软体动物', climate: '冰河时代反复出现', image: '🐙' },
+      phaneo: { title: '古生代 (5.4-2.5亿年前)', events: ['寒武纪生命大爆发', '生物登上陆地', '鱼类繁盛', '森林出现'], life: '三叶虫、鱼类、两栖类', climate: '气候温暖，海平面高', image: '🐟' },
+      meso: { title: '中生代 (2.5-0.66亿年前)', events: ['盘古大陆分裂', '恐龙繁盛', '鸟类和哺乳动物出现', '被子植物兴起'], life: '恐龙、原始鸟类、哺乳动物', climate: '气候温暖，恐龙统治', image: '🦖' },
+      ceno: { title: '新生代 (6600万年前-现在)', events: ['恐龙灭绝', '哺乳动物兴起', '人类出现', '青藏高原隆升'], life: '现代哺乳动物、人类', climate: '气候多变，冰期出现', image: '🦣' }
+    };
+
+    const fossilData = {
+      trilobite: { name: '三叶虫', period: '寒武纪 - 二叠纪', size: '1mm - 90cm', diet: '肉食/腐食', fact: '三叶虫是寒武纪最繁盛的节肢动物，共有超过15000个物种。它们的身体分为三个部分：头甲、胸甲和尾甲。' },
+      dinosaur: { name: '恐龙', period: '三叠纪 - 白垩纪', size: '20cm - 40m', diet: '肉食/草食', fact: '恐龙统治地球约1.6亿年，直到6600万年前的小行星撞击导致它们灭绝。鸟类被认为是现存的兽脚类恐龙后裔。' },
+      ammonite: { name: '菊石', period: '泥盆纪 - 白垩纪', size: '1cm - 3m', diet: '肉食', fact: '菊石是章鱼的近亲，它们用触手捕捉猎物。菊石壳内的气室结构启发了早期潜水艇的设计。' },
+      mammoth: { name: '猛犸象', period: '更新世', size: '3m - 5m', diet: '草食', fact: '猛犸象适应寒冷环境，它们的毛皮长达1米。最后的猛犸象在4000年前才灭绝，比埃及金字塔还晚。' }
+    };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'layers') initLayerChart();
+      if (tabId === 'evolution') initAtmosphereChart();
+      if (tabId === 'events') initExtinctionChart();
+    }
+
+    function updateEarthCut(value) {
+      const cutLine = document.getElementById('cutLine');
+      cutLine.style.transform = `rotate(${value * 1.8}deg)`;
+      
+      const layers = document.querySelectorAll('.earth-layer');
+      const cutAngle = value;
+      
+      if (cutAngle > 0) {
+        const visiblePercent = cutAngle / 100;
+        layers.forEach((layer, i) => {
+          const insetRight = (100 - cutAngle) * 0.9;
+          layer.style.clipPath = `polygon(0 0, ${cutAngle}% 0, ${cutAngle}% 100%, 0 100%)`;
+        });
+      } else {
+        layers.forEach((layer) => {
+          layer.style.clipPath = 'none';
+        });
+      }
+      
+      showLayerInfoByCut(cutAngle);
+    }
+    
+    function showLayerInfoByCut(cutAngle) {
+      const infoDiv = document.getElementById('layerInfoDisplay');
+      if (!infoDiv) return;
+      
+      let layerInfo;
+      if (cutAngle < 20) {
+        layerInfo = { name: '地壳', depth: '0-35 km', composition: '花岗岩、玄武岩', temp: '约15°C-1000°C', features: '最外层，人类生存的地方' };
+      } else if (cutAngle < 50) {
+        layerInfo = { name: '地幔', depth: '35-2900 km', composition: '橄榄岩、辉石', temp: '约1000°C-3000°C', features: '塑性流动，火山岩浆来源' };
+      } else if (cutAngle < 80) {
+        layerInfo = { name: '外核', depth: '2900-5150 km', composition: '液态铁镍', temp: '约3000°C-4500°C', features: '液态，产生地球磁场' };
+      } else {
+        layerInfo = { name: '内核', depth: '5150-6371 km', composition: '固态铁镍', temp: '约4500°C-5500°C', features: '固态，地球最热的地方' };
+      }
+      
+      infoDiv.innerHTML = `
+        <div style="display:grid;gap:8px">
+          <div><strong style="color:var(--accent-cyan)">${layerInfo.name}</strong></div>
+          <div><strong>深度：</strong>${layerInfo.depth}</div>
+          <div><strong>主要成分：</strong>${layerInfo.composition}</div>
+          <div><strong>温度：</strong>${layerInfo.temp}</div>
+          <div><strong>特点：</strong>${layerInfo.features}</div>
+        </div>
+      `;
+    }
+
+    function updateDepthTravel(value) {
+      const depth = Math.round(value * 6371 / 100);
+      const marker = document.getElementById('depthMarker');
+      marker.style.top = value + '%';
+      document.getElementById('currentDepth').textContent = depth.toLocaleString() + ' km';
+
+      const info = document.getElementById('depthInfo');
+      let temp, pressure, desc;
+
+      if (depth < 35) {
+        temp = 15 + depth * 25;
+        pressure = 1 + depth * 250;
+        desc = '人类可以正常生存';
+      } else if (depth < 2900) {
+        temp = 1000 + (depth - 35) * 0.5;
+        pressure = 90000 + (depth - 35) * 100;
+        desc = '高温高压，岩石软化';
+      } else if (depth < 5150) {
+        temp = 4000 + (depth - 2900) * 0.3;
+        pressure = 300000 + (depth - 2900) * 50;
+        desc = '外核液态铁镍，产生磁场';
+      } else {
+        temp = 5000 + (depth - 5150) * 1.2;
+        pressure = 350000 + (depth - 5150) * 30;
+        desc = '内核固态铁镍，极端高温高压';
+      }
+
+      info.innerHTML = `
+        <div style="margin-bottom:8px"><strong>当前位置：</strong>${depth < 35 ? '地壳' : depth < 2900 ? '地幔' : depth < 5150 ? '外核' : '内核'}</div>
+        <div style="margin-bottom:8px"><strong>温度：</strong>${temp.toFixed(0)}°C</div>
+        <div style="margin-bottom:8px"><strong>压力：</strong>${pressure.toFixed(0)} MPa</div>
+        <div><strong>环境描述：</strong>${desc}</div>
+      `;
+
+      GeoApp.saveProgress('sheet3', { depthExplored: depth });
+    }
+
+    function showEraDetail(era) {
+      const data = eraDetails[era];
+      if (!data) return;
+      document.getElementById('eraDetail').innerHTML = `
+        <div style="display:flex;gap:24px;align-items:flex-start">
+          <div style="font-size:4rem">${data.image}</div>
+          <div style="flex:1">
+            <h4 style="color:var(--accent-cyan);margin-bottom:12px">${data.title}</h4>
+            <div style="margin-bottom:12px"><strong>生命形式：</strong>${data.life}</div>
+            <div style="margin-bottom:12px"><strong>气候特征：</strong>${data.climate}</div>
+            <div><strong>重大事件：</strong></div>
+            <ul style="margin-left:20px;margin-top:8px">
+              ${data.events.map(e => `<li>${e}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+      GeoApp.saveProgress('sheet3', { eraExplored: era });
+    }
+
+    let isDrifting = false;
+    let driftInterval = null;
+
+    const continentPositions = {
+      'north-america': { left: { 0: '30%', 100: '20%' }, top: { 0: '40%', 100: '30%' } },
+      'south-america': { left: { 0: '38%', 100: '28%' }, top: { 0: '60%', 100: '55%' } },
+      'africa': { left: { 0: '48%', 100: '45%' }, top: { 0: '45%', 100: '48%' } },
+      'europe': { left: { 0: '55%', 100: '52%' }, top: { 0: '35%', 100: '33%' } },
+      'asia': { left: { 0: '60%', 100: '68%' }, top: { 0: '35%', 100: '30%' } },
+      'australia': { left: { 0: '68%', 100: '80%' }, top: { 0: '65%', 100: '75%' } },
+      'antarctica': { left: { 0: '48%', 100: '50%' }, top: { 0: '80%', 100: '85%' } }
+    };
+
+    const yearLabels = {
+      0: '2亿年前 (侏罗纪)',
+      50: '1亿年前 (白垩纪)',
+      100: '现在'
+    };
+
+    function updateDriftPosition(value) {
+      const progress = parseInt(value);
+      document.getElementById('driftYear').textContent = yearLabels[progress] || `${(2 - progress * 0.02).toFixed(1)}亿年前`;
+
+      Object.keys(continentPositions).forEach(continentId => {
+        const el = document.getElementById(continentId);
+        if (el) {
+          const pos = continentPositions[continentId];
+          const startLeft = parseFloat(pos.left[0]);
+          const endLeft = parseFloat(pos.left[100]);
+          const startTop = parseFloat(pos.top[0]);
+          const endTop = parseFloat(pos.top[100]);
+
+          const currentLeft = startLeft + (endLeft - startLeft) * (progress / 100);
+          const currentTop = startTop + (endTop - startTop) * (progress / 100);
+
+          el.style.left = currentLeft + '%';
+          el.style.top = currentTop + '%';
+        }
+      });
+    }
+
+    function animateDrift(step) {
+      const slider = document.getElementById('driftSlider');
+      let current = parseInt(slider.value);
+      current = Math.max(0, Math.min(100, current + step));
+      slider.value = current;
+      updateDriftPosition(current);
+    }
+
+    function toggleDrift() {
+      if (isDrifting) {
+        clearInterval(driftInterval);
+        isDrifting = false;
+        return;
+      }
+
+      isDrifting = true;
+      driftInterval = setInterval(() => {
+        const slider = document.getElementById('driftSlider');
+        let current = parseInt(slider.value);
+        current = (current + 1) % 101;
+        slider.value = current;
+        updateDriftPosition(current);
+      }, 100);
+    }
+
+    function showPlateInfo(plate) {
+      const plateData = {
+        'pacific': { name: '太平洋板块', size: '1.03亿km²', description: '全球最大的板块，几乎完全由海洋地壳组成，包含著名的环太平洋火山地震带。' },
+        'north-american': { name: '北美板块', size: '7590万km²', description: '包括北美大陆、格陵兰岛及周边海域，与太平洋板块交界处多火山地震。' },
+        'south-american': { name: '南美板块', size: '4360万km²', description: '包括南美大陆及周边海域，与纳斯卡板块碰撞形成安第斯山脉。' },
+        'african': { name: '非洲板块', size: '6130万km²', description: '包括非洲大陆及大西洋、印度洋部分海域，东非大裂谷正在分裂。' },
+        'eurasian': { name: '欧亚板块', size: '6780万km²', description: '包括欧洲、亚洲大部分地区，与印度板块碰撞形成喜马拉雅山脉。' },
+        'australian': { name: '澳大利亚板块', size: '4790万km²', description: '包括澳大利亚、新西兰及印度洋部分海域，正在向北移动。' },
+        'antarctic': { name: '南极洲板块', size: '6090万km²', description: '包括南极洲及周边海域，被其他板块包围，是全球最冷的板块。' }
+      };
+
+      const data = plateData[plate];
+      if (!data) return;
+
+      const modalHtml = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;" id="plateModal" onclick="if(event.target.id==='plateModal')this.remove()">
+          <div style="background:var(--bg-card);padding:30px;border-radius:16px;max-width:500px;margin:20px;">
+            <h2 style="margin-bottom:20px;">🌍 ${data.name}</h2>
+            <div style="display:grid;gap:12px;">
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;">
+                <div style="font-size:0.85rem;color:var(--text-secondary);">面积</div>
+                <div style="font-weight:600;">${data.size}</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;">
+                <div style="font-size:0.85rem;color:var(--text-secondary);">描述</div>
+                <div style="font-size:0.95rem;">${data.description}</div>
+              </div>
+            </div>
+            <div style="text-align:center;margin-top:24px;">
+              <button class="btn" onclick="document.getElementById('plateModal').remove()">关闭</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      GeoApp.saveProgress('sheet3', { plateViewed: plate });
+    }
+
+    function showFossil(fossil) {
+      const data = fossilData[fossil];
+      if (!data) return;
+      document.getElementById('fossilTitle').textContent = '🦴 ' + data.name;
+      document.getElementById('fossilContent').innerHTML = `
+        <div style="display:grid;gap:12px;margin-top:16px">
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+            <div style="font-size:0.85rem;color:var(--text-secondary)">生存时期</div>
+            <div style="font-weight:600">${data.period}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+            <div style="font-size:0.85rem;color:var(--text-secondary)">体型大小</div>
+            <div style="font-weight:600">${data.size}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+            <div style="font-size:0.85rem;color:var(--text-secondary)">食性</div>
+            <div style="font-weight:600">${data.diet}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px">
+            <div style="font-size:0.85rem;color:var(--text-secondary)">趣味知识</div>
+            <div style="font-weight:600">${data.fact}</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('fossilModal').classList.add('active');
+    }
+
+    function updateAsteroid() {
+      const size = document.getElementById('asteroidSize').value;
+      const asteroid = document.getElementById('asteroid');
+      asteroid.style.width = size + 'px';
+      asteroid.style.height = size + 'px';
+    }
+
+    function simulateImpact() {
+      const asteroid = document.getElementById('asteroid');
+      const sim = document.getElementById('asteroidSim');
+      const angle = document.getElementById('asteroidAngle').value;
+      const speed = document.getElementById('asteroidSpeed').value;
+      const size = parseInt(document.getElementById('asteroidSize').value);
+
+      sim.innerHTML = '';
+      asteroid.style.transition = 'none';
+      asteroid.style.top = '20%';
+      asteroid.style.left = '50%';
+      asteroid.style.width = size + 'px';
+      asteroid.style.height = size + 'px';
+      sim.appendChild(asteroid);
+
+      const duration = (11 - speed) * 0.3;
+      const targetLeft = (50 + parseInt(angle) - 45) + '%';
+
+      setTimeout(() => {
+        asteroid.style.transition = `top ${duration}s linear, left ${duration}s linear`;
+        asteroid.style.top = '90%';
+        asteroid.style.left = targetLeft;
+      }, 50);
+
+      setTimeout(() => {
+        asteroid.style.display = 'none';
+        
+        const fireball = document.createElement('div');
+        fireball.style.position = 'absolute';
+        fireball.style.width = (size * 5) + 'px';
+        fireball.style.height = (size * 5) + 'px';
+        fireball.style.left = targetLeft;
+        fireball.style.top = '85%';
+        fireball.style.transform = 'translate(-50%, -50%)';
+        fireball.style.borderRadius = '50%';
+        fireball.style.background = 'radial-gradient(circle, #fff 0%, #ff6600 30%, #ff0000 60%, transparent 100%)';
+        fireball.style.animation = 'fireball 0.5s ease-out';
+        sim.appendChild(fireball);
+
+        const debrisPieces = [];
+        for (let i = 0; i < 15; i++) {
+          const debrisPiece = document.createElement('div');
+          debrisPiece.style.position = 'absolute';
+          debrisPiece.style.width = (Math.random() * 15 + 5) + 'px';
+          debrisPiece.style.height = (Math.random() * 15 + 5) + 'px';
+          debrisPiece.style.left = targetLeft;
+          debrisPiece.style.top = '90%';
+          debrisPiece.style.borderRadius = '50%';
+          debrisPiece.style.background = Math.random() > 0.5 ? '#8b4513' : '#ff6600';
+          debrisPiece.style.transform = 'translate(-50%, -50%)';
+          sim.appendChild(debrisPiece);
+          debrisPieces.push(debrisPiece);
+          
+          const angleDeg = Math.random() * 360;
+          const dist = Math.random() * 100 + 50;
+          const targetX = Math.cos(angleDeg * Math.PI / 180) * dist;
+          const targetY = Math.sin(angleDeg * Math.PI / 180) * dist - 50;
+          debrisPiece.style.transition = 'all 0.8s ease-out';
+          setTimeout(() => {
+            debrisPiece.style.transform = `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px))`;
+            debrisPiece.style.opacity = '0';
+          }, 50);
+        }
+
+        const crater = document.createElement('div');
+        crater.style.position = 'absolute';
+        crater.style.width = (size * 3) + 'px';
+        crater.style.height = (size * 2) + 'px';
+        crater.style.left = targetLeft;
+        crater.style.top = '95%';
+        crater.style.transform = 'translate(-50%, -50%)';
+        crater.style.borderRadius = '50%';
+        crater.style.background = 'radial-gradient(circle, #4a3728 0%, #3a2718 50%, transparent 100%)';
+        crater.style.boxShadow = 'inset 0 5px 15px rgba(0,0,0,0.5)';
+        sim.appendChild(crater);
+
+        const shockwave = document.createElement('div');
+        shockwave.style.position = 'absolute';
+        shockwave.style.left = targetLeft;
+        shockwave.style.top = '90%';
+        shockwave.style.transform = 'translate(-50%, -50%)';
+        shockwave.style.width = '10px';
+        shockwave.style.height = '10px';
+        shockwave.style.borderRadius = '50%';
+        shockwave.style.border = '3px solid rgba(255,100,0,0.8)';
+        shockwave.style.animation = 'shockwave 1.5s ease-out forwards';
+        sim.appendChild(shockwave);
+
+        const impactInfo = document.createElement('div');
+        impactInfo.style.position = 'absolute';
+        impactInfo.style.bottom = '10px';
+        impactInfo.style.left = '10px';
+        impactInfo.style.padding = '10px';
+        impactInfo.style.background = 'rgba(0,0,0,0.7)';
+        impactInfo.style.borderRadius = '8px';
+        impactInfo.style.color = 'white';
+        impactInfo.style.fontSize = '0.9rem';
+        const energy = (size * speed * 100).toLocaleString();
+        impactInfo.innerHTML = `💥 撞击！<br>大小: ${size}px<br>速度: ${speed}<br>估计能量: ${energy}万吨TNT`;
+        sim.appendChild(impactInfo);
+
+        setTimeout(() => {
+          fireball.remove();
+          debrisPieces.forEach(d => d.remove());
+          impactInfo.remove();
+        }, 3000);
+
+        GeoApp.saveProgress('sheet3', { asteroidImpact: true });
+      }, duration * 1000);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function initLayerChart() {
+      const chartEl = document.getElementById('layerChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['厚度(km)', '温度(°C)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['地壳', '上地幔', '下地幔', '外核', '内核'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: [
+          { type: 'value', name: '厚度/km', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+          { type: 'value', name: '温度/°C', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } }
+        ],
+        series: [
+          { name: '厚度(km)', type: 'bar', data: [35, 670, 2230, 2270, 1210], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#cd853f' }, { offset: 1, color: '#8b4513' }]) } },
+          { name: '温度(°C)', type: 'line', yAxisIndex: 1, data: [15, 900, 3000, 4500, 5500], areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255,100,0,0.5)' }, { offset: 1, color: 'rgba(255,100,0,0)' }]) }, lineStyle: { color: '#ff6600' }, itemStyle: { color: '#ff6600' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initAtmosphereChart() {
+      const chartEl = document.getElementById('atmosphereChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['氧气%', '二氧化碳(ppm)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['冥古宙', '太古宙', '元古宙', '古生代', '中生代', '新生代'], axisLabel: { color: '#b0b0d0', rotate: 30 } },
+        yAxis: [
+          { type: 'value', name: '氧气%', max: 30, axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+          { type: 'value', name: 'CO₂ppm', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } }
+        ],
+        series: [
+          { name: '氧气%', type: 'line', smooth: true, data: [0, 0.1, 2, 12, 21, 23], areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(0,180,216,0.5)' }, { offset: 1, color: 'rgba(0,180,216,0)' }]) }, lineStyle: { color: '#00b4d8' }, itemStyle: { color: '#00b4d8' } },
+          { name: '二氧化碳(ppm)', type: 'line', smooth: true, yAxisIndex: 1, data: [10000, 8000, 4000, 2000, 800, 400], areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(155,89,182,0.5)' }, { offset: 1, color: 'rgba(155,89,182,0)' }]) }, lineStyle: { color: '#9b59b6' }, itemStyle: { color: '#9b59b6' } }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function initExtinctionChart() {
+      const chartEl = document.getElementById('extinctionChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['奥陶纪\n4.4亿年前', '泥盆纪\n3.65亿年前', '二叠纪\n2.5亿年前', '三叠纪\n2亿年前', '白垩纪\n6600万年前'], axisLabel: { color: '#b0b0d0', rotate: 30 } },
+        yAxis: { type: 'value', name: '物种消失%', max: 100, axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'bar',
+          data: [85, 75, 96, 80, 76],
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#e74c3c' },
+              { offset: 1, color: '#c0392b' }
+            ])
+          },
+          label: { show: true, position: 'top', formatter: '{c}%', color: '#fff' }
+        }]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initLayerChart();
+    });
+  </script>
+</body>
+</html>

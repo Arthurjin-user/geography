@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探索地球 - 交互式地理学习系统</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 20px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .earth-container {
+      width: 400px;
+      height: 400px;
+      position: relative;
+      margin-bottom: 40px;
+    }
+
+    .earth-3d {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #4a90e2, #1a5f9e 50%, #0d3b66 100%);
+      box-shadow: 
+        0 0 60px rgba(74, 144, 226, 0.4),
+        inset -20px -20px 60px rgba(0, 0, 0, 0.4),
+        inset 10px 10px 40px rgba(255, 255, 255, 0.1);
+      animation: rotateEarth 60s linear infinite, float 6s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .earth-3d::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 40% 20% at 25% 35%, rgba(34, 139, 34, 0.6) 0%, transparent 70%),
+        radial-gradient(ellipse 35% 25% at 55% 45%, rgba(34, 139, 34, 0.5) 0%, transparent 60%),
+        radial-gradient(ellipse 20% 15% at 70% 30%, rgba(34, 139, 34, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 15% 10% at 20% 60%, rgba(34, 139, 34, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 10% 8% at 80% 55%, rgba(139, 119, 101, 0.6) 0%, transparent 50%);
+      border-radius: 50%;
+    }
+
+    .earth-3d::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.15) 0%, transparent 20%),
+        radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 10%);
+      border-radius: 50%;
+    }
+
+    .earth-atmosphere {
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, transparent 60%, rgba(74, 144, 226, 0.2) 80%, rgba(74, 144, 226, 0.1) 100%);
+      pointer-events: none;
+    }
+
+    .earth-orbit {
+      position: absolute;
+      inset: -60px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      animation: rotateOrbit 30s linear infinite;
+    }
+
+    .earth-satellite {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      border-radius: 50%;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px #fff;
+    }
+
+    @keyframes rotateEarth {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotateOrbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(0deg); }
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00d4ff, #4a90e2, #9b59b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.3rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 900px;
+      margin-top: 40px;
+    }
+
+    .theme-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 12px 40px rgba(0, 212, 255, 0.3);
+    }
+
+    .theme-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .theme-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .theme-card:nth-child(1) { background: linear-gradient(135deg, rgba(10, 10, 30, 0.9), rgba(30, 30, 70, 0.9)); }
+    .theme-card:nth-child(2) { background: linear-gradient(135deg, rgba(45, 31, 15, 0.9), rgba(65, 42, 21, 0.9)); }
+    .theme-card:nth-child(3) { background: linear-gradient(135deg, rgba(135, 206, 235, 0.3), rgba(173, 216, 230, 0.3)); }
+    .theme-card:nth-child(4) { background: linear-gradient(135deg, rgba(0, 105, 148, 0.9), rgba(0, 68, 102, 0.9)); }
+    .theme-card:nth-child(5) { background: linear-gradient(135deg, rgba(139, 69, 19, 0.9), rgba(101, 67, 33, 0.9)); }
+    .theme-card:nth-child(6) { background: linear-gradient(135deg, rgba(44, 10, 10, 0.9), rgba(74, 21, 21, 0.9)); }
+    .theme-card:nth-child(7) { background: linear-gradient(135deg, rgba(26, 42, 58, 0.9), rgba(42, 58, 74, 0.9)); }
+    .theme-card:nth-child(8) { background: linear-gradient(135deg, rgba(50, 50, 80, 0.9), rgba(70, 70, 100, 0.9)); }
+
+    .fact-section {
+      margin-top: 60px;
+      text-align: center;
+      max-width: 700px;
+    }
+
+    .fact-box {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 30px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .fact-label {
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .fact-text {
+      font-size: 1.2rem;
+      line-height: 1.8;
+      color: var(--text-primary);
+    }
+
+    .fact-refresh {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 20px;
+      color: var(--accent-cyan);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .fact-refresh:hover {
+      background: rgba(0, 212, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .intro-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 80px;
+      max-width: 1200px;
+    }
+
+    .intro-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .intro-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .intro-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .intro-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    
+
+    .stats-section {
+      margin-top: 80px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-top: 12px;
+      opacity: 0.7;
+    }
+
+    .featured-section {
+      margin-top: 80px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .featured-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .featured-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 12px 40px rgba(0, 212, 255, 0.2);
+    }
+
+    .featured-image {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .featured-content {
+      padding: 20px;
+    }
+
+    .featured-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .featured-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 2.2rem; }
+      .earth-container { width: 280px; height: 280px; }
+      .theme-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .theme-icon { font-size: 2rem; }
+      .theme-name { font-size: 0.85rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .featured-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav-bar">
+    <div class="nav-brand">🌍 探索地球</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link active">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 首页</a>
+  </nav>
+
+  
+
+  <main class="main-content">
+    <section class="hero-section">
+      <div class="earth-container">
+        <div class="earth-atmosphere"></div>
+        <div class="earth-orbit">
+          <div class="earth-satellite"></div>
+        </div>
+        <div class="earth-3d"></div>
+      </div>
+
+      <h1 class="hero-title">探索地球</h1>
+      <p class="hero-subtitle">交互式高中地理学习系统 - 8大主题模块，沉浸式学习体验</p>
+
+      <div class="theme-grid">
+        <a href="sheet2.html" class="theme-card">
+          <div class="theme-icon">🌌</div>
+          <div class="theme-name">宇宙中的地球</div>
+        </a>
+        <a href="sheet3.html" class="theme-card">
+          <div class="theme-icon">🌍</div>
+          <div class="theme-name">地球的结构</div>
+        </a>
+        <a href="sheet4.html" class="theme-card">
+          <div class="theme-icon">🌫️</div>
+          <div class="theme-name">大气系统</div>
+        </a>
+        <a href="sheet5.html" class="theme-card">
+          <div class="theme-icon">💧</div>
+          <div class="theme-name">水循环与海洋</div>
+        </a>
+        <a href="sheet6.html" class="theme-card">
+          <div class="theme-icon">🌱</div>
+          <div class="theme-name">土壤与植被</div>
+        </a>
+        <a href="sheet7.html" class="theme-card">
+          <div class="theme-icon">⚠️</div>
+          <div class="theme-name">自然灾害</div>
+        </a>
+        <a href="sheet8.html" class="theme-card">
+          <div class="theme-icon">🛰️</div>
+          <div class="theme-name">地理信息技术</div>
+        </a>
+        <a href="javascript:void(0)" class="theme-card" onclick="showProgress()">
+          <div class="theme-icon">📊</div>
+          <div class="theme-name">学习进度</div>
+        </a>
+      </div>
+
+      <div class="fact-section">
+        <div class="fact-box">
+          <div class="fact-label">
+            <span>📚</span>
+            <span>今日地理冷知识</span>
+          </div>
+          <p class="fact-text" data-fact-display>地球是太阳系中唯一一颗表面被液态水覆盖的行星，覆盖率约71%。</p>
+          <button class="fact-refresh" onclick="refreshFact()">🔄 换一个</button>
+        </div>
+      </div>
+
+      <div class="intro-section">
+        <div class="intro-card">
+          <div class="intro-icon">🎮</div>
+          <div class="intro-title">交互式学习</div>
+          <div class="intro-desc">通过动态模拟、交互式图表和趣味小游戏，让抽象的地理概念变得直观有趣。</div>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon">📊</div>
+          <div class="intro-title">真实数据</div>
+          <div class="intro-desc">每个知识点都配有真实的科学数据和权威来源，帮助你深入理解地球科学。</div>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon">💾</div>
+          <div class="intro-title">进度保存</div>
+          <div class="intro-desc">你的学习进度会自动保存在本地浏览器中，随时继续学习不丢失。</div>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon">🌍</div>
+          <div class="intro-title">三维可视化</div>
+          <div class="intro-desc">运用先进的可视化技术，呈现地球内部结构、大气环流等复杂地理现象。</div>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon">🔬</div>
+          <div class="intro-title">科学探索</div>
+          <div class="intro-desc">从太阳系到地球内部，从大气系统到自然灾害，全面探索地球奥秘。</div>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon">📱</div>
+          <div class="intro-title">跨平台访问</div>
+          <div class="intro-desc">支持多种设备访问，随时随地学习地理知识，打破时间空间限制。</div>
+        </div>
+      </div>
+
+      <div class="stats-section">
+        <h2 style="text-align:center;margin-bottom:32px;font-size:1.8rem;color:var(--accent-cyan)">📈 系统概览</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">8</div>
+            <div class="stat-label">主题模块</div>
+            <div class="stat-icon">📚</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">互动组件</div>
+            <div class="stat-icon">⚡</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">15</div>
+            <div class="stat-label">数据图表</div>
+            <div class="stat-icon">📊</div>
+            </div>
+          <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">数据来源权威</div>
+            <div class="stat-icon">🔍</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="featured-section">
+        <h2 style="text-align:center;margin-bottom:32px;font-size:1.8rem;color:var(--accent-cyan)">🔥 热门探索</h2>
+        <div class="featured-grid">
+          <div class="featured-card" onclick="window.location.href='sheet2.html'">
+            <div class="featured-image" style="background:linear-gradient(135deg, #0a0a2a, #1a1a4a)">
+              <div style="font-size:4rem">🌌</div>
+            </div>
+            <div class="featured-content">
+              <div class="featured-title">太阳系漫游</div>
+              <div class="featured-desc">探索太阳系八大行星，了解它们的特征和奥秘</div>
+            </div>
+          </div>
+          <div class="featured-card" onclick="window.location.href='sheet4.html'">
+            <div class="featured-image" style="background:linear-gradient(135deg, #006994, #004466)">
+              <div style="font-size:4rem">🌪️</div>
+            </div>
+            <div class="featured-content">
+              <div class="featured-title">温室效应模拟</div>
+              <div class="featured-desc">调节温室气体浓度，观察气候变化趋势</div>
+            </div>
+          </div>
+          <div class="featured-card" onclick="window.location.href='sheet7.html'">
+            <div class="featured-image" style="background:linear-gradient(135deg, #263238, #37474f)">
+              <div style="font-size:4rem">🌋</div>
+            </div>
+            <div class="featured-content">
+              <div class="featured-title">自然灾害探索</div>
+              <div class="featured-desc">了解台风、地震、火山等自然灾害的形成机制</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="progressModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom:24px">📊 学习进度</h2>
+      <div id="progressContent"></div>
+      <div style="margin-top:24px;text-align:center">
+        <button class="btn" onclick="closeModal('progressModal')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>探索地球 - 交互式地理学习系统 | 数据来源：NASA、中国科学院、NOAA等权威机构</p>
+    <p style="margin-top:8px;opacity:0.7">© 2024 地理教育资源</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    function refreshFact() {
+      const facts = GeoApp.facts;
+      const display = document.querySelector('[data-fact-display]');
+      let newFact;
+      do {
+        newFact = facts[Math.floor(Math.random() * facts.length)];
+      } while (newFact === display.textContent && facts.length > 1);
+      display.textContent = newFact;
+    }
+
+    function showProgress() {
+      const progress = GeoApp.loadProgress();
+      const sheets = [
+        { id: 'sheet2', name: '宇宙中的地球', icon: '🌌' },
+        { id: 'sheet3', name: '地球的结构', icon: '🌍' },
+        { id: 'sheet4', name: '大气系统', icon: '🌫️' },
+        { id: 'sheet5', name: '水循环与海洋', icon: '💧' },
+        { id: 'sheet6', name: '土壤与植被', icon: '🌱' },
+        { id: 'sheet7', name: '自然灾害', icon: '⚠️' },
+        { id: 'sheet8', name: '地理信息技术', icon: '🛰️' }
+      ];
+
+      let html = '<div style="display:flex;flex-direction:column;gap:12px">';
+      sheets.forEach(sheet => {
+        const data = progress[sheet.id] || {};
+        const completed = data.completedInteractions || 0;
+        const barWidth = Math.min(100, completed * 5);
+        html += `
+          <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+              <span style="font-size:1.5rem">${sheet.icon}</span>
+              <span style="font-weight:600">${sheet.name}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${barWidth}%"></div>
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px">
+              ${completed} 个交互完成
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      document.getElementById('progressContent').innerHTML = html;
+      document.getElementById('progressModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

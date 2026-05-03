@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>土壤与植被 - 探索地球</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .soil-profile {
+      display: flex;
+      flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .soil-layer {
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .soil-layer:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    }
+
+    .layer-litter { background: linear-gradient(135deg, #5d4e37, #3d3225); min-height: 50px; }
+    .layer-humus { background: linear-gradient(135deg, #4a3728, #2d2118); min-height: 60px; }
+    .layer-leaching { background: linear-gradient(135deg, #6b5344, #4a3828); min-height: 80px; }
+    .layer-illuviation { background: linear-gradient(135deg, #8b7355, #6b5344); min-height: 70px; }
+    .layer-parent { background: linear-gradient(135deg, #9b8b7a, #7b6b5a); min-height: 80px; }
+    .layer-bedrock { background: linear-gradient(135deg, #5a4a3a, #3a2a1a); min-height: 60px; }
+
+    .soil-timeline {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin: 20px 0;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+
+    .timeline-stage {
+      flex-shrink: 0;
+      width: 100px;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .timeline-stage:hover {
+      background: rgba(39, 174, 96, 0.2);
+      transform: translateY(-4px);
+    }
+
+    .timeline-stage.active {
+      background: rgba(39, 174, 96, 0.3);
+      border: 1px solid var(--accent-green);
+    }
+
+    .earthworm {
+      width: 40px;
+      height: 15px;
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+      border-radius: 50%;
+      margin: 10px auto;
+      animation: earthwormMove 2s ease-in-out infinite;
+    }
+
+    @keyframes earthwormMove {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(10px) rotate(10deg); }
+      75% { transform: translateX(-10px) rotate(-10deg); }
+    }
+
+    .vegetation-map {
+      width: 100%;
+      height: 350px;
+      background: linear-gradient(180deg, #1a3a2a 0%, #0d1f15 100%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid rgba(39, 174, 96, 0.3);
+    }
+
+    .world-outline {
+      position: absolute;
+      inset: 20px;
+      background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400"%3E%3Cpath fill="rgba(52,152,219,0.1)" d="M100,200 Q150,150 200,180 T300,160 T400,180 T500,150 T600,190 T700,170" stroke="rgba(52,152,219,0.3)" stroke-width="2" fill="none"/%3E%3Cpath fill="rgba(52,152,219,0.1)" d="M150,250 Q200,220 250,240 T350,230 T450,250 T550,220" stroke="rgba(52,152,219,0.3)" stroke-width="2" fill="none"/%3E%3Cpath fill="rgba(52,152,219,0.1)" d="M450,180 Q500,140 550,160 T650,150" stroke="rgba(52,152,219,0.3)" stroke-width="2" fill="none"/%3E%3C/svg%3E') center/cover;
+    }
+
+    .climate-zone {
+      position: absolute;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .climate-zone:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
+      z-index: 10;
+    }
+
+    .zone-tropical { background: linear-gradient(135deg, rgba(39, 174, 96, 0.9), rgba(30, 132, 73, 0.9)); }
+    .zone-savanna { background: linear-gradient(135deg, rgba(241, 196, 15, 0.9), rgba(212, 167, 106, 0.9)); }
+    .zone-desert { background: linear-gradient(135deg, rgba(230, 126, 34, 0.9), rgba(211, 84, 0, 0.9)); }
+    .zone-temperate { background: linear-gradient(135deg, rgba(52, 152, 219, 0.9), rgba(41, 128, 185, 0.9)); }
+    .zone-boreal { background: linear-gradient(135deg, rgba(139, 195, 74, 0.9), rgba(85, 139, 47, 0.9)); }
+    .zone-tundra { background: linear-gradient(135deg, rgba(236, 240, 241, 0.9), rgba(189, 195, 199, 0.9)); color: #333; text-shadow: none; }
+
+    .vertical-zones {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 300px;
+      margin: 20px auto;
+    }
+
+    .altitude-zone {
+      padding: 16px;
+      text-align: center;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .altitude-zone:hover {
+      transform: translateX(10px);
+      box-shadow: 0 0 15px rgba(0,212,255,0.3);
+    }
+
+    .zone-snow { background: linear-gradient(135deg, #ecf0f1, #bdc3c7); color: #333; }
+    .zone-alpine { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+    .zone-subalpine { background: linear-gradient(135deg, #27ae60, #1e8449); }
+    .zone-temperate-forest { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+    .zone-tropical-forest { background: linear-gradient(135deg, #1abc9c, #16a085); }
+
+    .leaf-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .leaf-card {
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .leaf-card:hover {
+      background: rgba(39, 174, 96, 0.2);
+      transform: translateY(-4px);
+    }
+
+    .leaf-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+
+    .fire-progress {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .fire-stage {
+      width: 100px;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+
+    .fire-stage.active {
+      opacity: 1;
+      background: rgba(231, 76, 60, 0.3);
+      border: 1px solid #e74c3c;
+    }
+
+    .soil-factors {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .factor-card {
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .factor-slider {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body data-theme="soil">
+  <nav class="nav-bar" style="background:rgba(101,67,33,0.95)">
+    <div class="nav-brand">🌱 土壤与植被</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="sheet2.html" class="nav-link">宇宙中的地球</a>
+      <a href="sheet3.html" class="nav-link">地球的结构</a>
+      <a href="sheet4.html" class="nav-link">大气系统</a>
+      <a href="sheet5.html" class="nav-link">水循环</a>
+      <a href="sheet6.html" class="nav-link active">土壤植被</a>
+      <a href="sheet7.html" class="nav-link">自然灾害</a>
+      <a href="sheet8.html" class="nav-link">地理信息技术</a>
+    </div>
+    <a href="index.html" class="nav-back">🏠 返回</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('soil')">土壤形成</button>
+        <button class="tab" onclick="switchTab('vegetation')">植被类型</button>
+        <button class="tab" onclick="switchTab('adaptation')">植物适应</button>
+      </div>
+
+      <div id="soil" class="tab-content active">
+        <div class="card">
+          <h3>⏳ 土壤形成过程时间轴</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">从岩石风化到成熟土壤的漫长过程（可能需要数百年到数千年）</p>
+          <div class="soil-timeline">
+            <div class="timeline-stage" onclick="showSoilStage(1)">
+              <div style="font-size:1.5rem;margin-bottom:4px">🪨</div>
+              <div>岩石风化</div>
+              <div style="font-size:0.7rem;opacity:0.7">物理+化学风化</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="timeline-stage" onclick="showSoilStage(2)">
+              <div style="font-size:1.5rem;margin-bottom:4px">💧</div>
+              <div>物质迁移</div>
+              <div style="font-size:0.7rem;opacity:0.7">淋溶与淀积</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="timeline-stage" onclick="showSoilStage(3)">
+              <div style="font-size:1.5rem;margin-bottom:4px">🌱</div>
+              <div>生物积累</div>
+              <div style="font-size:0.7rem;opacity:0.7">有机质积累</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="timeline-stage" onclick="showSoilStage(4)">
+              <div style="font-size:1.5rem;margin-bottom:4px">🕐</div>
+              <div>成土时间</div>
+              <div style="font-size:0.7rem;opacity:0.7">数百年到千年</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="timeline-stage" onclick="showSoilStage(5)">
+              <div style="font-size:1.5rem;margin-bottom:4px">🌍</div>
+              <div>成熟土壤</div>
+              <div style="font-size:0.7rem;opacity:0.7">剖面发育完整</div>
+            </div>
+          </div>
+          <div id="soilStageDetail" style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击上方时间轴了解各阶段详情</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🔍 土壤剖面挖掘游戏</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击各层，了解土壤剖面的完整结构</p>
+          <div class="soil-profile" id="soilProfile">
+            <div class="soil-layer layer-litter" onclick="showLayer('litter')">
+              <div style="font-size:0.8rem;opacity:0.8">O层 - 枯枝落叶层</div>
+              <div style="font-size:0.7rem;margin-top:4px">新鲜落叶和枯枝</div>
+            </div>
+            <div class="soil-layer layer-humus" onclick="showLayer('humus')">
+              <div style="font-size:0.8rem;opacity:0.8">A层 - 腐殖质层</div>
+              <div style="font-size:0.7rem;margin-top:4px">分解的有机质，黑色肥沃</div>
+            </div>
+            <div class="soil-layer layer-leaching" onclick="showLayer('leaching')">
+              <div style="font-size:0.8rem;opacity:0.8">E层 - 淋溶层</div>
+              <div style="font-size:0.7rem;margin-top:4px">矿物质被水向下带走</div>
+            </div>
+            <div class="soil-layer layer-illuviation" onclick="showLayer('illuviation')">
+              <div style="font-size:0.8rem;opacity:0.8">B层 - 淀积层</div>
+              <div style="font-size:0.7rem;margin-top:4px">矿物质在此积累</div>
+            </div>
+            <div class="soil-layer layer-parent" onclick="showLayer('parent')">
+              <div style="font-size:0.8rem;opacity:0.8">C层 - 母质层</div>
+              <div style="font-size:0.7rem;margin-top:4px">风化的岩石</div>
+            </div>
+            <div class="soil-layer layer-bedrock" onclick="showLayer('bedrock')">
+              <div style="font-size:0.8rem;opacity:0.8">R层 - 母岩层</div>
+              <div style="font-size:0.7rem;margin-top:4px">未风化的基岩</div>
+            </div>
+          </div>
+          <div id="layerDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击土壤剖面上方各层了解详情</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>⚙️ 土壤形成影响因素</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">调节各因素，观察对土壤形成的影响</p>
+          <div class="soil-factors">
+            <div class="factor-card">
+              <div style="font-weight:600">🌡️ 气候</div>
+              <div class="factor-slider">
+                <input type="range" class="slider" min="0" max="100" value="50" oninput="updateSoilFactors()">
+                <span>温暖湿润</span>
+              </div>
+            </div>
+            <div class="factor-card">
+              <div style="font-weight:600">🌿 生物</div>
+              <div class="factor-slider">
+                <input type="range" class="slider" min="0" max="100" value="50" oninput="updateSoilFactors()">
+                <span>植被丰富</span>
+              </div>
+            </div>
+            <div class="factor-card">
+              <div style="font-weight:600">⛰️ 地形</div>
+              <div class="factor-slider">
+                <input type="range" class="slider" min="0" max="100" value="50" oninput="updateSoilFactors()">
+                <span>平缓坡地</span>
+              </div>
+            </div>
+            <div class="factor-card">
+              <div style="font-weight:600">⏰ 时间</div>
+              <div class="factor-slider">
+                <input type="range" class="slider" min="0" max="100" value="30" oninput="updateSoilFactors()">
+                <span>数百年</span>
+              </div>
+            </div>
+          </div>
+          <div id="soilResult" style="margin-top:16px;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+            <div style="font-weight:600">土壤发育程度：中等</div>
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">形成速度较慢，需要更长时间达到成熟</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🪱 蚯蚓松土过程</h3>
+          <div style="display:flex;gap:40px;align-items:center;padding:20px">
+            <div style="flex:1">
+              <p style="margin-bottom:12px">蚯蚓在土壤中穿行，形成通道：</p>
+              <ul style="margin-left:20px;font-size:0.9rem">
+                <li>改善土壤通气性</li>
+                <li>促进水分渗透</li>
+                <li>加速有机质分解</li>
+                <li>混合土壤层次</li>
+                <li>增加土壤肥力</li>
+              </ul>
+            </div>
+            <div style="text-align:center">
+              <div class="earthworm"></div>
+              <div style="font-size:0.85rem;margin-top:8px">🐛 蚯蚓松土中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="vegetation" class="tab-content">
+        <div class="card">
+          <h3>🌍 世界气候与植被对应地图</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">点击不同气候区，显示对应的植被类型和特征</p>
+          <div class="vegetation-map" id="vegetationMap">
+            <div class="world-outline"></div>
+            <div style="position:absolute;top:10px;left:10px;font-size:0.75rem;color:rgba(255,255,255,0.6)">🌍 世界气候分布图</div>
+            <div class="climate-zone zone-tropical" style="width:18%;height:18%;top:45%;left:35%" onclick="showVegetation('tropical', '热带雨林', '赤道附近（0°-10°）', '终年高温多雨，物种丰富，树冠分层明显，藤本植物发达')">
+              <div style="text-align:center">🌴<br>热带雨林</div>
+            </div>
+            <div class="climate-zone zone-savanna" style="width:15%;height:15%;top:55%;left:48%" onclick="showVegetation('savanna', '热带草原', '热带雨林南北（10°-20°）', '干湿季分明，高草为主，稀疏树木，大型食草动物繁盛')">
+              <div style="text-align:center">🌾<br>热带草原</div>
+            </div>
+            <div class="climate-zone zone-desert" style="width:16%;height:16%;top:35%;left:58%" onclick="showVegetation('desert', '热带荒漠', '回归线附近（20°-30°）', '炎热干燥，降水极少，耐旱植物为主，昼夜温差大')">
+              <div style="text-align:center">🌵<br>热带荒漠</div>
+            </div>
+            <div class="climate-zone zone-temperate" style="width:20%;height:14%;top:40%;left:18%" onclick="showVegetation('temperate', '亚热带常绿阔叶林', '亚热带（25°-35°）', '四季常绿，叶片革质，适应周期性干旱，茶树、竹林分布')">
+              <div style="text-align:center">🌳<br>亚热带常绿林</div>
+            </div>
+            <div class="climate-zone zone-boreal" style="width:22%;height:14%;top:28%;left:30%" onclick="showVegetation('boreal', '温带落叶阔叶林', '温带（35°-50°）', '夏绿冬枯，落叶乔木，季相变化明显，秋季红叶')">
+              <div style="text-align:center">🍂<br>温带落叶林</div>
+            </div>
+            <div class="climate-zone zone-tundra" style="width:25%;height:10%;top:18%;left:35%" onclick="showVegetation('tundra', '苔原/冰原', '高纬度（60°以上）', '永久冻土层，低矮植被，地衣苔藓为主，生长期短')">
+              <div style="text-align:center">❄️<br>苔原</div>
+            </div>
+          </div>
+          <div id="vegetationDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击地图上的气候区了解植被详情</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🌲 主要植被类型特征</h3>
+          <div class="grid-3" style="margin-top:16px">
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🌴</div>
+              <div style="font-weight:600">热带雨林</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>年降水>2000mm</li>
+                <li>物种极度丰富</li>
+                <li>树冠垂直分层</li>
+                <li>藤本植物发达</li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🌾</div>
+              <div style="font-weight:600">热带草原</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>干湿季分明</li>
+                <li>高草为主</li>
+                <li>稀疏点缀树木</li>
+                <li>大型食草动物</li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🌵</div>
+              <div style="font-weight:600">热带荒漠</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>年降水<250mm</li>
+                <li>多肉植物</li>
+                <li>昼伏夜出</li>
+                <li>根系发达</li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🌳</div>
+              <div style="font-weight:600">亚热带常绿阔叶林</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>四季常绿</li>
+                <li>革质叶片</li>
+                <li>茶树、油桐</li>
+                <li>亚热带季风气候</li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🍂</div>
+              <div style="font-weight:600">温带落叶阔叶林</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>夏绿冬枯</li>
+                <li>季相分明</li>
+                <li>秋季红叶</li>
+                <li>温带海洋性气候</li>
+              </ul>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:20px;border-radius:12px">
+              <div style="font-size:2rem;margin-bottom:12px">🌲</div>
+              <div style="font-weight:600">亚寒带针叶林</div>
+              <ul style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;margin-left:16px">
+                <li>常绿针叶树</li>
+                <li>松柏类为主</li>
+                <li>泰加林</li>
+                <li>耐寒耐旱</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>⛰️ 植被垂直带谱攀登</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">从山脚到山顶，观察植被随海拔高度的变化</p>
+          <div class="vertical-zones">
+            <div class="altitude-zone zone-tropical" onclick="showAltitude('tropical')">
+              <div style="font-weight:600">0-1000m</div>
+              <div style="font-size:0.85rem;margin-top:4px">热带雨林带</div>
+            </div>
+            <div class="altitude-zone zone-temperate-forest" onclick="showAltitude('temperate')">
+              <div style="font-weight:600">1000-2000m</div>
+              <div style="font-size:0.85rem;margin-top:4px">亚热带常绿阔叶林</div>
+            </div>
+            <div class="altitude-zone zone-subalpine" onclick="showAltitude('subalpine')">
+              <div style="font-weight:600">2000-3000m</div>
+              <div style="font-size:0.85rem;margin-top:4px">温带落叶阔叶林</div>
+            </div>
+            <div class="altitude-zone zone-alpine" onclick="showAltitude('alpine')">
+              <div style="font-weight:600">3000-4000m</div>
+              <div style="font-size:0.85rem;margin-top:4px">亚高山针叶林</div>
+            </div>
+            <div class="altitude-zone zone-snow" onclick="showAltitude('snow')">
+              <div style="font-weight:600">4000m+</div>
+              <div style="font-size:0.85rem;margin-top:4px">高山草甸/冰雪带</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;margin-top:16px">
+            <p><strong>规律：</strong>海拔每升高1000米，气温下降约6°C。这导致植被带从热带依次过渡到寒带，形成明显的垂直分异规律。</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="adaptation" class="tab-content">
+        <div class="card">
+          <h3>🍃 树叶形态与气候关系</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">不同气候条件下植物叶子的形态差异</p>
+          <div class="leaf-gallery">
+            <div class="leaf-card" onclick="showLeaf('drip', '滴水叶尖', '热带雨林', '热带雨林全年高温多雨，叶片宽大，尖端细长，便于雨水滑落，防止真菌感染和叶片腐烂')">
+              <div class="leaf-icon">🍃</div>
+              <div style="font-weight:600">滴水叶尖</div>
+              <div style="font-size:0.8rem;opacity:0.7">热带雨林</div>
+            </div>
+            <div class="leaf-card" onclick="showLeaf('needle', '针状叶', '热带荒漠', '荒漠地区降水极少，针状叶减少蒸腾面积，保存水分，同时硬质叶片抵御动物取食')">
+              <div class="leaf-icon">🌵</div>
+              <div style="font-weight:600">针状叶</div>
+              <div style="font-size:0.8rem;opacity:0.7">热带荒漠</div>
+            </div>
+            <div class="leaf-card" onclick="showLeaf('leathery', '革质叶', '亚热带', '亚热带季风气候，革质叶片较厚，表皮粗糙，有效减少水分蒸腾，适应周期性干旱')">
+              <div class="leaf-icon">🌿</div>
+              <div style="font-weight:600">革质叶</div>
+              <div style="font-size:0.8rem;opacity:0.7">亚热带</div>
+            </div>
+            <div class="leaf-card" onclick="showLeaf('fallen', '落叶', '温带', '温带四季分明，冬季寒冷干燥，落叶减少蒸腾作用，避免冻害，秋季落叶形成有机肥')">
+              <div class="leaf-icon">🍂</div>
+              <div style="font-weight:600">落叶乔木</div>
+              <div style="font-size:0.8rem;opacity:0.7">温带</div>
+            </div>
+            <div class="leaf-card" onclick="showLeaf('small', '小叶片', '草原', '草原地区降水较少，风大，小叶片减少蒸腾面积，同时根系发达吸收深层水分')">
+              <div class="leaf-icon">🌾</div>
+              <div style="font-weight:600">小叶片</div>
+              <div style="font-size:0.8rem;opacity:0.7">温带草原</div>
+            </div>
+            <div class="leaf-card" onclick="showLeaf('succulent', '肉质', '干旱地区', '多肉植物叶片肥厚，储存大量水分，表皮有蜡质层减少蒸腾，适应极端干旱环境')">
+              <div class="leaf-icon">🪨</div>
+              <div style="font-weight:600">肉质叶片</div>
+              <div style="font-size:0.8rem;opacity:0.7">干旱地区</div>
+            </div>
+          </div>
+          <div id="leafDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击上方叶片了解详细解释</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>🔥 森林火灾后生态恢复</h3>
+          <p style="color:var(--text-secondary);margin-bottom:16px">从裸地到森林的演替过程</p>
+          <div class="fire-progress">
+            <div class="fire-stage active" id="fireStage1">
+              <div style="font-size:1.5rem">🔥</div>
+              <div>火灾发生</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="fire-stage" id="fireStage2">
+              <div style="font-size:1.5rem">🌱</div>
+              <div>草本阶段</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="fire-stage" id="fireStage3">
+              <div style="font-size:1.5rem">🌿</div>
+              <div>灌木阶段</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="fire-stage" id="fireStage4">
+              <div style="font-size:1.5rem">🌲</div>
+              <div>先锋树种</div>
+            </div>
+            <div style="width:20px;text-align:center">→</div>
+            <div class="fire-stage" id="fireStage5">
+              <div style="font-size:1.5rem">🌳</div>
+              <div>成熟森林</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;justify-content:center;margin-top:16px">
+            <button class="btn" onclick="startFireRecovery()">▶ 播放恢复过程</button>
+          </div>
+          <div id="fireDetail" style="margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px">
+            <strong>点击播放按钮开始观察火灾后的生态演替过程</strong>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <h3>📊 土壤类型分布</h3>
+          <p class="data-source">数据来源：FAO世界土壤图谱</p>
+          <div class="chart-container large" id="soilTypeChart"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>土壤与植被 | 数据来源：FAO、中国科学院土壤研究所</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    const soilStages = {
+      1: { title: '🪨 岩石风化', desc: '物理风化（温度变化、冰劈）和化学风化（水解、氧化）分解岩石', time: '物理：数日-数年，化学：数十年到数百年' },
+      2: { title: '💧 物质迁移', desc: '水将风化产物和可溶性物质从上层向下层移动，形成淋溶和淀积', time: '持续进行' },
+      3: { title: '🌱 生物积累', desc: '植物残体和动物遗体在表层积累，分解形成腐殖质', time: '每年积累约1-2吨/公顷' },
+      4: { title: '🕐 成土时间', desc: '足够的时间让所有因素共同作用，形成完整的土壤剖面', time: '棕壤：500-1000年，黑土：2000-3000年' },
+      5: { title: '🌍 成熟土壤', desc: '土壤剖面层次分明，各层物质组成和结构稳定', time: '可持续数千年' }
+    };
+
+    const soilLayers = {
+      litter: { name: 'O层 - 枯枝落叶层', depth: '0-5cm', features: '新鲜或半分解的植物残体，是土壤有机质的主要来源' },
+      humus: { name: 'A层 - 腐殖质层', depth: '5-30cm', features: '已分解的有机质与矿质土壤混合，呈现暗色，肥力最高' },
+      leaching: { name: 'E层 - 淋溶层', depth: '30-50cm', features: '矿物质和黏粒被水分溶解并向下迁移，颜色较浅' },
+      illuviation: { name: 'B层 - 淀积层', depth: '50-100cm', features: '从上层淋溶下来的物质在此积累，颜色较深，质地较黏' },
+      parent: { name: 'C层 - 母质层', depth: '100-200cm', features: '风化的岩石碎屑，尚未发育成土壤，物质组成与母岩相同' },
+      bedrock: { name: 'R层 - 母岩层', depth: '200cm+', features: '未风化的基岩，是土壤形成的物质来源' }
+    };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+
+      if (tabId === 'adaptation') initSoilTypeChart();
+    }
+
+    function showSoilStage(stage) {
+      const data = soilStages[stage];
+      if (!data) return;
+
+      document.querySelectorAll('.timeline-stage').forEach((el, i) => {
+        el.classList.toggle('active', i < stage);
+      });
+
+      document.getElementById('soilStageDetail').innerHTML = `
+        <h4 style="color:var(--accent-green);margin-bottom:8px">${data.title}</h4>
+        <p>${data.desc}</p>
+        <div style="margin-top:8px;font-size:0.85rem;color:var(--text-secondary)">${data.time}</div>
+      `;
+    }
+
+    function showLayer(layer) {
+      const data = soilLayers[layer];
+      if (!data) return;
+      document.getElementById('layerDetail').innerHTML = `
+        <h4 style="color:var(--accent-green);margin-bottom:8px">${data.name}</h4>
+        <div style="margin-bottom:8px"><strong>深度：</strong>${data.depth}</div>
+        <div><strong>特征：</strong>${data.features}</div>
+      `;
+      GeoApp.saveProgress('sheet6', { layerExplored: layer });
+    }
+
+    function showVegetation(type, name, location, features) {
+      document.getElementById('vegetationDetail').innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:2rem">🌍</div>
+          <div>
+            <div style="font-weight:600">${name}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">${location}</div>
+          </div>
+        </div>
+        <div><strong>特征：</strong>${features}</div>
+      `;
+    }
+
+    function showAltitude(type) {
+      const altitudes = {
+        tropical: { name: '热带雨林带', temp: '20-25°C', precip: '>2000mm', features: '终年高温多雨，植被茂密，层次丰富' },
+        temperate: { name: '亚热带常绿阔叶林', temp: '15-20°C', precip: '1000-1500mm', features: '四季常绿，叶片革质，适应周期性干旱' },
+        subalpine: { name: '温带落叶阔叶林', temp: '10-15°C', precip: '800-1200mm', features: '夏绿冬枯，秋季色彩丰富' },
+        alpine: { name: '亚高山针叶林', temp: '5-10°C', precip: '600-1000mm', features: '针叶树为主，树形塔状' },
+        snow: { name: '高山草甸/冰雪带', temp: '<5°C', precip: '500-800mm', features: '低矮草丛，地衣苔藓，永久冻土' }
+      };
+
+      const data = altitudes[type];
+      if (!data) return;
+
+      document.getElementById('layerDetail').innerHTML = `
+        <h4 style="color:var(--accent-green);margin-bottom:8px">${data.name}</h4>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+          <div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:0.8rem;color:var(--text-secondary)">年均温</div>
+            <div style="font-weight:600">${data.temp}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:0.8rem;color:var(--text-secondary)">年降水</div>
+            <div style="font-weight:600">${data.precip}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:8px;text-align:center">
+            <div style="font-size:0.8rem;color:var(--text-secondary)">特征</div>
+            <div style="font-weight:600;font-size:0.8rem">${data.features.substring(0,15)}...</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showLeaf(type, name, climate, desc) {
+      document.getElementById('leafDetail').innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="font-size:2rem">🍃</div>
+          <div>
+            <div style="font-weight:600">${name}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">${climate}</div>
+          </div>
+        </div>
+        <div>${desc}</div>
+      `;
+    }
+
+    function startFireRecovery() {
+      const stages = [
+        { id: 'fireStage1', title: '🔥 火灾发生', desc: '火灾烧毁所有植被，土壤暴露，表层有机质被烧焦' },
+        { id: 'fireStage2', title: '🌱 草本阶段', desc: '火灾后1-5年，土壤种子库萌发，一年生草本迅速覆盖地表' },
+        { id: 'fireStage3', title: '🌿 灌木阶段', desc: '火灾后5-20年，灌木逐渐占据优势，形成灌木群落' },
+        { id: 'fireStage4', title: '🌲 先锋树种', desc: '火灾后20-50年，松树等先锋树种在林冠形成' },
+        { id: 'fireStage5', title: '🌳 成熟森林', desc: '火灾后100+年，顶级群落形成，生态平衡恢复' }
+      ];
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < stages.length) {
+          document.querySelectorAll('.fire-stage').forEach((el, idx) => {
+            el.classList.toggle('active', idx <= i);
+          });
+          document.getElementById('fireDetail').innerHTML = `<strong>${stages[i].title}</strong><p>${stages[i].desc}</p>`;
+          i++;
+        } else {
+          clearInterval(interval);
+          GeoApp.saveProgress('sheet6', { fireRecovery: true });
+        }
+      }, 2000);
+    }
+
+    function updateSoilFactors() {
+      const climate = parseInt(document.querySelectorAll('.soil-factors .slider')[0].value);
+      const biology = parseInt(document.querySelectorAll('.soil-factors .slider')[1].value);
+      const terrain = parseInt(document.querySelectorAll('.soil-factors .slider')[2].value);
+      const time = parseInt(document.querySelectorAll('.soil-factors .slider')[3].value);
+
+      const total = (climate + biology + terrain + time) / 4;
+      
+      let level, description, color, years;
+      if (total < 20) {
+        level = '极差';
+        description = '恶劣的气候条件下，土壤几乎无法形成';
+        color = 'var(--accent-red)';
+        years = '几乎不可能';
+      } else if (total < 40) {
+        level = '较差';
+        description = '土壤发育缓慢，土层浅薄，肥力低下';
+        color = 'var(--accent-orange)';
+        years = '>5000年';
+      } else if (total < 60) {
+        level = '一般';
+        description = '土壤中等发育，有一定肥力，适合部分作物';
+        color = 'var(--accent-yellow)';
+        years = '2000-5000年';
+      } else if (total < 80) {
+        level = '良好';
+        description = '土壤发育良好，肥力较高，适合多种作物生长';
+        color = 'var(--accent-green)';
+        years = '500-2000年';
+      } else {
+        level = '优秀';
+        description = '土壤高度发育，肥力极高，是理想的农业土壤';
+        color = 'var(--accent-cyan)';
+        years = '<500年';
+      }
+
+      document.getElementById('soilResult').innerHTML = `
+        <div style="font-weight:600;color:${color}">土壤发育程度：${level}</div>
+        <div style="font-size:0.9rem;color:var(--text-secondary);margin-top:8px">${description}</div>
+        <div style="font-size:0.9rem;margin-top:8px"><strong>预计形成时间：</strong>${years}</div>
+      `;
+    }
+
+    function initSoilTypeChart() {
+      const chartEl = document.getElementById('soilTypeChart');
+      if (!chartEl) return;
+
+      const chart = echarts.init(chartEl);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['面积占比(%)'], textStyle: { color: '#b0b0d0' } },
+        xAxis: { type: 'category', data: ['黑土', '棕壤', '红壤', '黄壤', '砖红壤', '盐碱土', '沙漠土'], axisLabel: { color: '#b0b0d0' } },
+        yAxis: { type: 'value', name: '%', axisLabel: { color: '#b0b0d0' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+        series: [{
+          type: 'bar',
+          data: [12, 25, 18, 8, 15, 5, 10],
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#27ae60' },
+              { offset: 1, color: '#8b4513' }
+            ])
+          }
+        }]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      showSoilStage(1);
+    });
+  </script>
+</body>
+</html>
